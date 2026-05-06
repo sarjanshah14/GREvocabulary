@@ -6,25 +6,24 @@ import WordCard from '../components/WordCard';
 import { toggleBookmark, getBookmarks } from '../utils/storage';
 
 const { wordlists } = data;
-const LIST_NUMS = [...new Set(wordlists.map((w) => w.wordlistNumber))].sort((a, b) => a - b);
 
 export default function WordLibrary() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [bookmarks, setBookmarks] = useState(() => getBookmarks());
 
+  // Only 3 filters — no wordlist numbers
   const filters = [
-    { id: 'all', label: 'All' },
-    { id: 'hf', label: '⭐ High Freq' },
-    { id: 'bookmarked', label: '🔖 Saved' },
-    ...LIST_NUMS.map((n) => ({ id: `wl_${n}`, label: `WL ${n}` })),
+    { id: 'all',       label: 'All Words' },
+    { id: 'hf',        label: '★ High Freq' },
+    { id: 'bookmarked',label: '🔖 Saved' },
   ];
 
   const filtered = useMemo(() => {
     let list = wordlists;
-    if (filter === 'hf') list = list.filter((w) => w.isHighFrequency);
+    if (filter === 'hf')        list = list.filter((w) => w.isHighFrequency);
     else if (filter === 'bookmarked') list = list.filter((w) => bookmarks.includes(w.word));
-    else if (filter.startsWith('wl_')) list = list.filter((w) => w.wordlistNumber === parseInt(filter.slice(3)));
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((w) =>
@@ -42,18 +41,20 @@ export default function WordLibrary() {
   }, []);
 
   return (
-    <div className="page-in min-h-screen" style={{ background: '#FAF9F6' }}>
+    <div className="page-in min-h-screen" style={{ background: '#F2F2F0' }}>
+
       {/* Sticky header */}
       <div
         className="sticky top-0 z-10 px-5 pt-14 pb-3"
-        style={{ background: 'rgba(250,249,246,0.92)', backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(242,242,240,0.95)', backdropFilter: 'blur(16px)' }}
       >
-        <h1 className="text-2xl font-black text-charcoal mb-3" style={{ letterSpacing: '-0.02em' }}>
+        <h1 className="text-2xl font-black mb-3" style={{ letterSpacing: '-0.02em', color: '#111111' }}>
           Word Library
         </h1>
+
         {/* Search */}
         <div className="relative mb-3">
-          <Search size={16} color="#9CA3AF" className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search size={16} color="#ADADAD" className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="search"
             placeholder="Search words, meanings, synonyms…"
@@ -63,17 +64,16 @@ export default function WordLibrary() {
             id="lib-search"
           />
           {search && (
-            <button
-              onClick={() => setSearch('')}
+            <button onClick={() => setSearch('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 pressable"
-              style={{ background: 'none', border: 'none' }}
-            >
-              <X size={16} color="#9CA3AF" />
+              style={{ background: 'none', border: 'none' }}>
+              <X size={16} color="#ADADAD" />
             </button>
           )}
         </div>
-        {/* Filter chips */}
-        <div className="scroll-row flex gap-2 pb-1">
+
+        {/* 3 filter chips only */}
+        <div className="flex gap-2">
           {filters.map((f) => (
             <button
               key={f.id}
@@ -89,21 +89,21 @@ export default function WordLibrary() {
 
       {/* Count */}
       <div className="px-5 py-2">
-        <span className="text-xs text-muted font-medium">{filtered.length} words</span>
+        <span className="text-xs font-medium" style={{ color: '#ADADAD' }}>{filtered.length} words</span>
       </div>
 
-      {/* List */}
+      {/* Word list */}
       <div className="px-4 pb-6 flex flex-col gap-2">
         {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="text-5xl">{filter === 'bookmarked' ? '🔖' : '🔍'}</div>
-            <p className="font-bold text-charcoal text-lg">
+            <p className="font-bold text-lg" style={{ color: '#111111' }}>
               {filter === 'bookmarked' ? 'No bookmarks yet' : 'No results found'}
             </p>
-            <p className="text-muted text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{ color: '#ADADAD' }}>
               {filter === 'bookmarked'
-                ? 'Start studying and bookmark words you want to revisit.'
-                : 'Try a different search or filter.'}
+                ? 'Bookmark words during study to revisit them here.'
+                : 'Try a different search term.'}
             </p>
           </div>
         ) : (

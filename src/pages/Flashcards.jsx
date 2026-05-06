@@ -9,16 +9,13 @@ import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 import {
   toggleFavourite, toggleBookmark,
   getFavourites, getBookmarks,
-  incrementSessions, updateStreak, addLastWordlist,
+  incrementSessions, updateStreak,
 } from '../utils/storage';
 
 const { wordlists } = data;
-const LIST_NUMS = [...new Set(wordlists.map((w) => w.wordlistNumber))].sort((a, b) => a - b);
 
 /* ─── Mode picker sheet ─────── */
 function ModeSheet({ onSelect, onClose, canClose }) {
-  const [pickerWL, setPickerWL] = useState(1);
-
   return (
     <AnimatePresence>
       <motion.div
@@ -33,18 +30,19 @@ function ModeSheet({ onSelect, onClose, canClose }) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#E4E4E2' }} />
-          <h2 className="text-xl font-black mb-4" style={{ color: '#111111' }}>Choose Session Mode</h2>
+          <h2 className="text-xl font-black mb-1" style={{ color: '#111111' }}>Choose Session Mode</h2>
+          <p className="text-sm mb-5" style={{ color: '#ADADAD' }}>All modes draw from the full word pool</p>
 
           {[
-            { id: 'all',            label: '📚 All Words',      desc: `${wordlists.length} words` },
-            { id: 'high_frequency', label: '★ High Frequency',  desc: `${wordlists.filter(w => w.isHighFrequency).length} words — boosted frequency` },
-            { id: 'bookmarks',      label: '🔖 Bookmarked',      desc: 'Words you saved' },
-            { id: 'due',            label: '🔄 Due for Review',  desc: 'Spaced repetition queue' },
+            { id: 'all',            label: '📚 All Words',          desc: `${wordlists.length} words · HF words appear 3× more often` },
+            { id: 'high_frequency', label: '★ High Frequency only',  desc: `${wordlists.filter(w => w.isHighFrequency).length} high-priority GRE words` },
+            { id: 'bookmarks',      label: '🔖 Bookmarked',           desc: 'Only words you saved' },
+            { id: 'due',            label: '🔄 Due for Review',       desc: 'Spaced repetition queue' },
           ].map((m) => (
             <motion.button
               key={m.id}
               whileTap={{ scale: 0.97 }}
-              onClick={() => onSelect(m.id, null)}
+              onClick={() => onSelect(m.id)}
               className="w-full flex items-center justify-between p-4 rounded-2xl mb-2 pressable text-left"
               style={{ background: '#F4F4F2', border: 'none', cursor: 'pointer' }}
               id={`mode-${m.id}`}
@@ -57,42 +55,10 @@ function ModeSheet({ onSelect, onClose, canClose }) {
             </motion.button>
           ))}
 
-          {/* Wordlist picker */}
-          <div className="mt-3 p-4 rounded-2xl" style={{ background: '#F4F4F2' }}>
-            <p className="font-semibold mb-3" style={{ color: '#111111' }}>📖 By Wordlist</p>
-            <div className="scroll-row flex gap-2 pb-1 mb-3">
-              {LIST_NUMS.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setPickerWL(n)}
-                  className="flex-shrink-0 w-10 h-10 rounded-xl font-bold text-sm pressable"
-                  style={{
-                    background: pickerWL === n ? '#222222' : '#FFFFFF',
-                    color: pickerWL === n ? '#FFFFFF' : '#9A9A9A',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-                    border: 'none', cursor: 'pointer',
-                  }}
-                  id={`pick-wl-${n}`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onSelect('wordlist', pickerWL)}
-              className="w-full py-3.5 rounded-xl font-bold text-white pressable btn-primary"
-              style={{ borderRadius: '0.75rem' }}
-              id="mode-wl-go"
-            >
-              Practice Wordlist {pickerWL} →
-            </motion.button>
-          </div>
-
           {canClose && (
             <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-              className="mt-3 w-full py-3 rounded-2xl font-semibold pressable btn-secondary"
-              id="mode-cancel">
+              className="mt-2 w-full py-3 rounded-2xl font-semibold pressable btn-secondary"
+              style={{ borderRadius: '1.25rem' }} id="mode-cancel">
               Cancel
             </motion.button>
           )}
@@ -143,11 +109,10 @@ export default function Flashcards() {
   const [favourites, setFavourites] = useState(() => getFavourites());
   const [bookmarks, setBookmarks] = useState(() => getBookmarks());
 
-  const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode, extra);
+  const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode, null);
 
-  const handleSelect = (m, e) => {
-    setMode(m); setExtra(e);
-    if (e) addLastWordlist(e);
+  const handleSelect = (m) => {
+    setMode(m);
     setShowSheet(false);
   };
 
@@ -156,7 +121,6 @@ export default function Flashcards() {
   const handleRestart = () => { setShowSheet(true); setSessionKey((k) => k + 1); };
 
   const modeName = () => {
-    if (mode === 'wordlist' && extra) return `Wordlist ${extra}`;
     if (mode === 'high_frequency') return '★ High Frequency';
     if (mode === 'bookmarks') return 'Bookmarks';
     if (mode === 'due') return 'Due for Review';
