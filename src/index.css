@@ -1,0 +1,392 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F2F2F0;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #EAEAE8;
+  --bg-hover: #E4E4E2;
+  --border: #E0E0DE;
+  --text: #111111;
+  --text-muted: #7A7A7A;
+  --text-faint: #ADADAD;
+  --accent: #222222;
+  --accent-light: #444444;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --dock-height: 80px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #E8E8E6;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  color: #111111;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background: #E8E8E6;
+}
+
+/* ─── Phone Container ───────────────────────── */
+.app-shell {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  background: #F2F2F0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 60px rgba(0,0,0,0.06);
+}
+
+/* ─── Page content ───────────────────────── */
+.page-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--dock-height) + var(--safe-bottom) + 20px);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.page-wrap::-webkit-scrollbar { display: none; }
+
+/* ─── Floating Pill Dock ───────────────────────── */
+.bottom-dock {
+  position: fixed;
+  bottom: calc(16px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 382px;
+  height: 64px;
+  background: #FFFFFF;
+  border-radius: 999px;
+  box-shadow: 0 2px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1000;
+  padding: 0 8px;
+}
+
+/* ─── Cards ───────────────────────── */
+.card {
+  background: #FFFFFF;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.card-md {
+  background: #FFFFFF;
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.card-lg {
+  background: #FFFFFF;
+  border-radius: 2rem;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.10), 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ─── Flip animation ───────────────────────── */
+.flip-container {
+  perspective: 1400px;
+}
+
+.flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flip-front, .flip-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+  position: absolute;
+  inset: 0;
+}
+
+/* ─── Chips — ALL NEUTRAL ───────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* single neutral chip style for everything */
+.chip-neutral {
+  background: #EAEAE8;
+  color: #333333;
+}
+
+/* subtle distinction for syn vs ant using weight only */
+.chip-syn {
+  background: #E8E8E6;
+  color: #222222;
+  border: 1px solid #D4D4D2;
+}
+
+.chip-ant {
+  background: #F5F5F3;
+  color: #555555;
+  border: 1px solid #E0E0DE;
+  font-style: italic;
+}
+
+/* backward-compat aliases */
+.chip-green   { background: #E8E8E6; color: #222222; border: 1px solid #D4D4D2; }
+.chip-red     { background: #F5F5F3; color: #555555; border: 1px solid #E0E0DE; font-style: italic; }
+.chip-lavender{ background: #EAEAE8; color: #333333; }
+.chip-orange  { background: #EAEAE8; color: #333333; }
+
+/* ─── Search bar ───────────────────────── */
+.search-bar {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #E8E8E6;
+  border-radius: 999px;
+  padding: 12px 16px 12px 44px;
+  font-size: 15px;
+  color: #111111;
+  outline: none;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+.search-bar::placeholder { color: #ADADAD; }
+
+/* ─── Scroll row ───────────────────────── */
+.scroll-row {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-row::-webkit-scrollbar { display: none; }
+
+/* ─── Swipe labels ───────────────────────── */
+.swipe-label-know {
+  position: absolute;
+  left: 20px;
+  top: 28px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 2.5px solid #333;
+  color: #333;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.swipe-label-skip {
+  position: absolute;
+  right: 20px;
+  top: 28px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 2.5px solid #999;
+  color: #999;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  transform: rotate(12deg);
+  pointer-events: none;
+}
+
+/* ─── Bottom Sheet ───────────────────────── */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.28);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.sheet-panel {
+  width: 100%;
+  max-width: 430px;
+  background: #FFFFFF;
+  border-radius: 28px 28px 0 0;
+  padding: 24px 24px calc(24px + var(--safe-bottom));
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* ─── Progress bar ───────────────────────── */
+.progress-track {
+  width: 100%;
+  height: 6px;
+  background: #E4E4E2;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #222222;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── Touch feedback ───────────────────────── */
+.pressable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.pressable:active { transform: scale(0.97); transition: transform 0.08s ease; }
+
+/* ─── Section label ───────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ADADAD;
+}
+
+/* ─── Stat card ───────────────────────── */
+.stat-card {
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 18px 16px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─── Wordlist tile mastery ───────────────────────── */
+.tile-zero { background: #EAEAE8; color: #ADADAD; }
+.tile-low  { background: #DEDEDE; color: #555555; }
+.tile-mid  { background: #BEBEBE; color: #222222; }
+.tile-done { background: #333333; color: #FFFFFF; }
+
+/* ─── Pill tab ───────────────────────── */
+.pill-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.pill-tab.active   { background: #222222; color: #FFFFFF; }
+.pill-tab.inactive { background: transparent; color: #9A9A9A; }
+
+/* ─── Filter chip ───────────────────────── */
+.filter-chip {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.filter-chip.active   { background: #222222; color: #FFFFFF; }
+.filter-chip.inactive { background: #FFFFFF; color: #7A7A7A; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+
+/* ─── Wordlist card shades (greyscale only) ───────────────────────── */
+/* Using 12 very subtle grey shades */
+.wl-s-0  { background: #3A3A3A; }
+.wl-s-1  { background: #4A4A4A; }
+.wl-s-2  { background: #5A5A5A; }
+.wl-s-3  { background: #6A6A6A; }
+.wl-s-4  { background: #767676; }
+.wl-s-5  { background: #828282; }
+.wl-s-6  { background: #3A3A3A; }
+.wl-s-7  { background: #4A4A4A; }
+.wl-s-8  { background: #5A5A5A; }
+.wl-s-9  { background: #6A6A6A; }
+.wl-s-10 { background: #767676; }
+.wl-s-11 { background: #828282; }
+
+/* ─── Matching game chips ───────────────────────── */
+.game-chip-idle     { background: #FFFFFF; color: #333333; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border: 1px solid #E4E4E2; }
+.game-chip-selected { background: #222222; color: #FFFFFF; border: 1px solid #222222; }
+.game-chip-correct  { background: #EAEAE8; color: #111111; border: 2px solid #333333; }
+.game-chip-wrong    { background: #F0F0EE; color: #888888; border: 1.5px solid #CCCCCC; text-decoration: line-through; }
+.game-chip-missed   { background: #FFFFFF; color: #333333; border: 2px dashed #888888; }
+
+/* ─── Star badge ───────────────────────── */
+.star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #EAEAE8;
+  color: #444444;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ─── Page fade in ───────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-in { animation: fadeUp 0.25s ease-out both; }
+
+/* ─── Empty state ───────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  text-align: center;
+  gap: 12px;
+}
+
+/* ─── Primary button ───────────────────────── */
+.btn-primary {
+  background: #222222;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.btn-primary:disabled { opacity: 0.35; cursor: default; }
+.btn-primary:active { opacity: 0.85; }
+
+/* ─── Secondary button ───────────────────────── */
+.btn-secondary {
+  background: #FFFFFF;
+  color: #333333;
+  border: 1px solid #E0E0DE;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
