@@ -119,13 +119,13 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
           style={{
             transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
             transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
-            minHeight: 340,
+            minHeight: 460,
           }}
         >
           {/* ── FRONT ── */}
           <div
             className="flip-front card-lg w-full flex flex-col items-center justify-center text-center p-8"
-            style={{ minHeight: 340, background: '#FFFFFF' }}
+            style={{ minHeight: 460, background: '#FFFFFF' }}
           >
             {word.isHighFrequency && (
               <span className="star-badge mb-4">★ High Frequency</span>
@@ -156,7 +156,7 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
           {/* ── BACK ── */}
           <div
             className="flip-back card-lg w-full flex flex-col p-6 overflow-y-auto"
-            style={{ minHeight: 340, background: '#FFFFFF' }}
+            style={{ minHeight: 460, background: '#FFFFFF' }}
           >
             <span className="section-label mb-2">Meaning</span>
             <p className="font-semibold text-base leading-relaxed mb-3" style={{ color: '#111111' }}>
