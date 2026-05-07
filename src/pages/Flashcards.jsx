@@ -220,7 +220,7 @@ export default function Flashcards() {
       {/* ── Header ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: 'max(env(safe-area-inset-top, 0px) + 16px, 56px) 20px 10px',
+        padding: 'max(env(safe-area-inset-top, 0px) + 32px, 72px) 20px 10px',
       }}>
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/')}
           style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer', flexShrink: 0 }}

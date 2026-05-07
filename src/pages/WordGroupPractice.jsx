@@ -32,7 +32,7 @@ export default function WordGroupPractice() {
   if (done) {
     return (
       <div className="page-in" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', padding: '0 20px', background: '#F2F2F0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', paddingTop: 52, marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)', marginBottom: 32 }}>
           <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/groups')}
             style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer', marginRight: 16 }}
             id="gp-back">
@@ -88,7 +88,7 @@ export default function WordGroupPractice() {
   return (
     <div className="page-in" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', padding: '0 20px', background: '#F2F2F0' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 52, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)', marginBottom: 12 }}>
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/groups')}
           style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer' }}
           id="gp-back-btn">

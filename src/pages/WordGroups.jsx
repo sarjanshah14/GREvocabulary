@@ -8,42 +8,6 @@ const { wordgroups, wordlists } = data;
 const wordMap = {};
 wordlists.forEach((w) => { wordMap[w.word.toLowerCase()] = w; });
 
-function WordDetail({ word, onClose }) {
-  const d = wordMap[word?.toLowerCase()];
-  return (
-    <AnimatePresence>
-      <motion.div className="sheet-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
-        <motion.div className="sheet-panel" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-          transition={{ type: 'spring', stiffness: 380, damping: 38 }} onClick={(e) => e.stopPropagation()}>
-          <div className="w-10 h-1 rounded-full mx-auto mb-4 bg-warmgrey" />
-          <h2 className="text-2xl font-black text-charcoal mb-1">{word}</h2>
-          {d ? (
-            <>
-              <p className="text-charcoal text-sm leading-relaxed mb-3">{d.meaning}</p>
-              {d.usage && <p className="text-sm italic mb-4" style={{ color: '#E8735A' }}>"{d.usage}"</p>}
-              {d.synonyms?.length > 0 && (
-                <div className="mb-3">
-                  <p className="section-label mb-2">Synonyms</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {d.synonyms.map((s, i) => <span key={i} className="chip chip-green">{s}</span>)}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-muted text-sm">No definition found in wordlists.</p>
-          )}
-          <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-            style={{ marginTop: 16, width: '100%', padding: '14px', borderRadius: '1.25rem', fontWeight: 600, fontSize: 14, background: '#EAEAE8', color: '#555', border: 'none', cursor: 'pointer' }}
-            id="word-detail-close">
-            Close
-          </motion.button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
 export default function WordGroups() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -64,7 +28,6 @@ export default function WordGroups() {
 
   return (
     <div className="page-in min-h-screen" style={{ background: '#FAF9F6' }}>
-      {selectedWord && <WordDetail word={selectedWord} onClose={() => setSelectedWord(null)} />}
 
       {/* Header */}
       <div className="sticky top-0 z-10 px-5 pt-14 pb-3"

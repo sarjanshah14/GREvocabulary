@@ -30,7 +30,7 @@ export default function Home() {
     <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
 
       {/* ── Header ── */}
-      <div className="px-5 pb-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 24px, 60px)' }}>
+      <div className="px-5 pb-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
           GRE Lexicon
         </h1>

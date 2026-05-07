@@ -5,8 +5,7 @@ export function useSpacedRepetition(allWords, mode = 'all') {
   const filtered = filterWords(allWords, mode);
 
   const [pool] = useState(() => {
-    if (mode === 'all' || mode === 'due') return getSessionPool(filtered, 50);
-    if (filtered.length > 50) return getSessionPool(filtered, 50);
+    if (mode === 'due') return getSessionPool(filtered, 50);
     return filtered;
   });
 
