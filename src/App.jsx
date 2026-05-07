@@ -22,6 +22,8 @@ export default function App() {
     // Initialize dark mode from localStorage
     if (localStorage.getItem('gre_dark_mode') === 'true') {
       document.documentElement.classList.add('dark-mode');
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (metaTheme) metaTheme.setAttribute('content', '#0D0D0F');
     }
   }, []);
 

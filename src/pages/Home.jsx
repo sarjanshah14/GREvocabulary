@@ -17,6 +17,8 @@ export default function Home() {
     setIsDark(next);
     localStorage.setItem('gre_dark_mode', next);
     document.documentElement.classList.toggle('dark-mode', next);
+    const metaTheme = document.getElementById('meta-theme-color');
+    if (metaTheme) metaTheme.setAttribute('content', next ? '#0D0D0F' : '#F2F2F0');
   };
 
   const stats = getAllStats(wordlists);
@@ -38,13 +40,10 @@ export default function Home() {
     <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
 
       {/* ── Header ── */}
-      <div className="px-5 pb-4 flex justify-between items-end" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
-            GRE Lexicon
-          </h1>
-          <p style={{ color: '#ADADAD', fontSize: 13, marginTop: 2 }}>Daily vocabulary mastery</p>
-        </div>
+      <div className="px-5 pb-4 flex justify-between items-center" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
+          GRE Lexicon
+        </h1>
         <motion.button 
           whileTap={{ scale: 0.85 }} 
           onClick={toggleDark} 
