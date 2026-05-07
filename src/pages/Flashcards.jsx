@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, SlidersHorizontal, Bookmark, Heart, X } from 'lucide-react';
@@ -169,6 +169,8 @@ export default function Flashcards() {
   const [bookmarks, setBookmarks] = useState(() => getBookmarks());
   const [favourites, setFavourites] = useState(() => getFavourites());
 
+  const cardRef = useRef(null);
+
   const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode);
   const daily = getDailyGoal();
 
@@ -179,6 +181,14 @@ export default function Flashcards() {
   const handleFav   = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
   const handleBook  = () => { if (current) setBookmarks([...toggleBookmark(current.word)]); };
   const handleRestart = () => { setShowSheet(false); setSessionKey((k) => k + 1); };
+
+  const handleButtonSwipe = (dir) => {
+    if (cardRef.current) {
+      cardRef.current.triggerSwipe(dir);
+    } else {
+      swipe(dir);
+    }
+  };
 
   const modeNames = {
     all: 'All Words',
@@ -305,7 +315,7 @@ export default function Flashcards() {
           ))}
           <div style={{ position: 'relative', zIndex: 3 }}>
             {current && (
-              <FlashCard key={current.word + sessionKey} word={current} onSwipe={swipe} />
+              <FlashCard ref={cardRef} key={current.word + sessionKey} word={current} onSwipe={swipe} />
             )}
           </div>
         </div>
@@ -314,8 +324,8 @@ export default function Flashcards() {
       {/* ── Swipe buttons ── */}
       <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0 140px' }}>
         <SwipeButtons
-          onLeft={() => swipe('left')}
-          onRight={() => swipe('right')}
+          onLeft={() => handleButtonSwipe('left')}
+          onRight={() => handleButtonSwipe('right')}
           disabled={!current}
           word={current?.word}
         />

@@ -106,13 +106,19 @@ export default function WordGroupPractice() {
       </div>
 
       <div style={{ flex: 1, paddingBottom: 120 }}>
-        <MatchingGame
-          key={index}
-          group={current}
-          allWords={wordlists}
-          onNext={handleNext}
-          onEnd={() => setDone(true)}
-        />
+        {current ? (
+          <MatchingGame
+            key={index}
+            group={current}
+            allWords={wordlists}
+            onNext={handleNext}
+            onEnd={() => setDone(true)}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', marginTop: 40, color: '#999' }}>
+            No groups available.
+          </div>
+        )}
       </div>
     </div>
   );

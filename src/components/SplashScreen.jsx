@@ -1,27 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function SplashScreen({ onDone }) {
-  const [phase, setPhase] = useState('show');
-
   useEffect(() => {
-    // Hold for 1.2s, then start fade
-    const t1 = setTimeout(() => setPhase('fade'), 1200);
-    // Unmount after fade completes
-    const t2 = setTimeout(() => {
-      setPhase('done');
-      onDone();
-    }, 1800);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Show splash for 1.5s, then signal done so AnimatePresence can fade it out
+    const t = setTimeout(onDone, 1500);
+    return () => clearTimeout(t);
   }, [onDone]);
-
-  if (phase === 'done') return null;
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      animate={{ opacity: phase === 'fade' ? 0 : 1 }}
-      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6, ease: 'easeInOut' }}
       style={{
         position: 'fixed',
         inset: 0,

@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
 const SWIPE_THRESHOLD = 80;  // px to trigger a swipe
 
-export default function FlashCard({ word, onSwipe }) {
+const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
   const [flipped, setFlipped] = useState(false);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 0, 220], [-18, 0, 18]);
@@ -12,6 +12,23 @@ export default function FlashCard({ word, onSwipe }) {
   const controls = useAnimation();
 
   const isAnimating = useRef(false);
+  const cardRef = useRef(null);
+
+  // Expose imperative triggerSwipe for external buttons
+  useImperativeHandle(ref, () => ({
+    triggerSwipe: async (dir) => {
+      if (isAnimating.current) return;
+      isAnimating.current = true;
+      await controls.start({
+        x: dir === 'right' ? 700 : -700,
+        opacity: 0,
+        rotate: dir === 'right' ? 22 : -22,
+        transition: { duration: 0.26, ease: [0.32, 0, 0.67, 0] },
+      });
+      isAnimating.current = false;
+      onSwipe(dir);
+    }
+  }));
 
   // Removed custom touch handlers to let Framer Motion handle drag exclusively.
 
@@ -44,6 +61,16 @@ export default function FlashCard({ word, onSwipe }) {
     }
   }, [controls, onSwipe]);
 
+  // Strict touch lock for mobile safari/chrome
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const preventScroll = (e) => e.preventDefault();
+    // Use non-passive listener to actively prevent vertical scroll when touching the card
+    el.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => el.removeEventListener('touchmove', preventScroll);
+  }, []);
+
   const handleTap = useCallback(() => {
     if (!isAnimating.current) {
       setFlipped((f) => !f);
@@ -54,8 +81,9 @@ export default function FlashCard({ word, onSwipe }) {
 
   return (
     <div
+      ref={cardRef}
       className="relative w-full flip-container"
-      style={{ userSelect: 'none' }}
+      style={{ userSelect: 'none', touchAction: 'none' }}
     >
       <motion.div
         drag="x"
@@ -71,8 +99,8 @@ export default function FlashCard({ word, onSwipe }) {
         style={{
           x, rotate,
           cursor: 'grab',
-          // Prevent card from scrolling page while being held
           touchAction: 'none',
+          willChange: 'transform',
         }}
         whileDrag={{ cursor: 'grabbing', scale: 1.01 }}
       >
@@ -167,4 +195,6 @@ export default function FlashCard({ word, onSwipe }) {
       </motion.div>
     </div>
   );
-}
+});
+
+export default FlashCard;

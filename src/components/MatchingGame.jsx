@@ -12,18 +12,25 @@ export default function MatchingGame({ group, allWords, onNext }) {
   // correct = group words that exist in the allWords dataset
   // decoys  = 5 random words NOT in the group
   const [chips, correctInRound] = useState(() => {
-    // Just use up to 6 words from the group to keep the game manageable
-    const correct = [...group.words].sort(() => Math.random() - 0.5).slice(0, 6);
-    
-    // Decoys are random words NOT in this group
-    const decoys = allWords
-      .filter((w) => !group.words.some((gw) => gw.toLowerCase() === w.word.toLowerCase()))
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 5)
-      .map((w) => w.word);
+    try {
+      if (!group || !Array.isArray(group.words)) return [[], []];
+
+      const safeGroupWords = group.words.filter(w => typeof w === 'string');
+      const correct = [...safeGroupWords].sort(() => Math.random() - 0.5).slice(0, 6);
       
-    const pool = [...correct, ...decoys].sort(() => Math.random() - 0.5);
-    return [pool, correct]; // [chips, correctInRound]
+      const safeAllWords = Array.isArray(allWords) ? allWords : [];
+      const decoys = safeAllWords
+        .filter(w => w && typeof w.word === 'string' && !safeGroupWords.some(gw => gw.toLowerCase() === w.word.toLowerCase()))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5)
+        .map(w => w.word);
+        
+      const pool = [...correct, ...decoys].sort(() => Math.random() - 0.5);
+      return [pool, correct];
+    } catch (e) {
+      console.error('MatchingGame init error:', e);
+      return [[], []];
+    }
   });
 
   // correctInRound is what the user CAN possibly select — this is what accuracy is measured against
