@@ -12,6 +12,7 @@ import ConfusingWords from './pages/ConfusingWords';
 import Profile from './pages/Profile';
 import Auth from './pages/Auth';
 import { supabase } from './utils/supabaseClient';
+import { fetchCloudData } from './utils/sync';
 
 const HIDE_NAV = ['/flashcards', '/groups/practice', '/confusing/practice'];
 
@@ -27,6 +28,9 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) {
+        fetchCloudData(session.user.id);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);

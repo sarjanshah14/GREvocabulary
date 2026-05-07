@@ -70,7 +70,7 @@ export async function pushCloudData() {
     } catch (err) {
       console.error('Failed to sync to cloud', err);
     }
-  }, 3000); // 3 second debounce
+  }, 1000); // 1 second debounce
 }
 
 export async function fetchCloudData(userId) {
