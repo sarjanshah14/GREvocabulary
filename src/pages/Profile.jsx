@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { supabase } from '../utils/supabaseClient';
 import data from '../../data.json';
 import { getAllStats, getDailyGoal, getGameScores, resetAll, initProgress } from '../utils/engine';
+import { fetchCloudData } from '../utils/sync';
 
 const { wordlists } = data;
 
@@ -17,20 +19,18 @@ function ConfirmReset({ onCancel, onConfirm }) {
         </p>
         {step === 0 ? (
           <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStep(1)}
-            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#333', color: '#fff', marginBottom: 10 }}
-            id="reset-confirm-btn">
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#333', color: '#fff', marginBottom: 10 }}>
             Yes, reset everything
           </motion.button>
         ) : (
           <motion.button whileTap={{ scale: 0.97 }} onClick={onConfirm}
-            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginBottom: 10 }}
-            id="reset-final-btn">
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginBottom: 10 }}>
             Confirm — erase all data ✓
           </motion.button>
         )}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onCancel}
           className="btn-secondary pressable w-full"
-          style={{ padding: '12px', borderRadius: '1.25rem' }} id="reset-cancel">
+          style={{ padding: '12px', borderRadius: '1.25rem' }}>
           Cancel
         </motion.button>
       </div>
@@ -58,10 +58,50 @@ function Bar({ label, count, total, shade }) {
   );
 }
 
-export default function Dashboard() {
+export default function Profile() {
   const [showReset, setShowReset] = useState(false);
   const [, forceUpdate] = useState(0);
   const refresh = () => forceUpdate((n) => n + 1);
+
+  // Auth State
+  const [session, setSession] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authMsg, setAuthMsg] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        // Pull cloud data on successful login
+        fetchCloudData(session.user.id).then(() => refresh());
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthMsg('');
+    const { error } = authMode === 'login' 
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+
+    if (error) setAuthMsg(error.message);
+    else if (authMode === 'signup') setAuthMsg('Check your email for the confirmation link!');
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const stats = getAllStats(wordlists);
   const daily = getDailyGoal();
@@ -74,7 +114,7 @@ export default function Dashboard() {
   const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
 
   return (
-    <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
+    <div className="page-in pb-safe-bottom" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
       {showReset && (
         <ConfirmReset
           onCancel={() => setShowReset(false)}
@@ -88,12 +128,54 @@ export default function Dashboard() {
       )}
 
       <div style={{ padding: '52px 20px 32px' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: '0 0 4px' }}>
-          My Progress
+        {/* ── Profile & Auth Header ── */}
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: '0 0 16px' }}>
+          Profile
         </h1>
-        <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 24px' }}>
-          {wordlists.length} total words · {stats.hfTotal} high frequency
-        </p>
+
+        {!session ? (
+          <div className="card" style={{ padding: 20, marginBottom: 32 }}>
+            <p style={{ fontWeight: 700, fontSize: 15, color: '#111', margin: '0 0 4px' }}>
+              Cloud Sync
+            </p>
+            <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 16px', lineHeight: 1.5 }}>
+              Sign in to automatically save your progress and streaks across all your devices.
+            </p>
+            <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '1rem', border: '1px solid #EAEAE8', background: '#F9F9F9', fontSize: 14 }} />
+              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '1rem', border: '1px solid #EAEAE8', background: '#F9F9F9', fontSize: 14 }} />
+              <motion.button whileTap={{ scale: 0.98 }} disabled={loading}
+                style={{ width: '100%', padding: '12px', borderRadius: '1rem', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginTop: 4 }}>
+                {loading ? 'Loading...' : (authMode === 'login' ? 'Log In' : 'Sign Up')}
+              </motion.button>
+            </form>
+            {authMsg && <p style={{ fontSize: 12, color: authMsg.includes('Check') ? '#4CAF50' : '#E53935', marginTop: 12 }}>{authMsg}</p>}
+            <p style={{ fontSize: 12, color: '#ADADAD', textAlign: 'center', marginTop: 16 }}>
+              {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+              <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthMsg(''); }}
+                style={{ background: 'none', border: 'none', color: '#111', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                {authMode === 'login' ? 'Sign up' : 'Log in'}
+              </button>
+            </p>
+          </div>
+        ) : (
+          <div className="card" style={{ padding: '16px 20px', marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>Logged in as</p>
+              <p style={{ fontSize: 13, color: '#7A7A7A', margin: 0 }}>{session.user.email}</p>
+            </div>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
+              style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+              Log Out
+            </motion.button>
+          </div>
+        )}
+
+        <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', margin: '0 0 16px' }}>
+          My Progress
+        </h2>
 
         {/* ── Overall ring + mastered ── */}
         <div className="card" style={{ padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -145,21 +227,6 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* ── HF Progress ── */}
-        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>★ High Frequency Words</p>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{stats.hfPct}%</span>
-          </div>
-          <div style={{ height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
-            <motion.div initial={{ width: 0 }} animate={{ width: `${stats.hfPct}%` }} transition={{ duration: 0.7 }}
-              style={{ height: '100%', background: '#555', borderRadius: 999 }} />
-          </div>
-          <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 6 }}>
-            {stats.hfMastered} / {stats.hfTotal} high-frequency words mastered
-          </p>
-        </div>
-
         {/* ── Mastery Breakdown ── */}
         <div className="card" style={{ padding: 16, marginBottom: 20 }}>
           <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: '0 0 16px' }}>Mastery Breakdown</p>
@@ -167,12 +234,6 @@ export default function Dashboard() {
           <Bar label="Learning" count={stats.learning}  total={stats.total} shade="#AAAAAA" />
           <Bar label="Familiar" count={stats.familiar}  total={stats.total} shade="#666666" />
           <Bar label="Mastered" count={stats.mastered}  total={stats.total} shade="#222222" />
-          <p style={{ fontSize: 10, color: '#ADADAD', marginTop: 8, lineHeight: 1.6 }}>
-            <strong>New</strong> = never reviewed ·{' '}
-            <strong>Learning</strong> = 1–2 correct ·{' '}
-            <strong>Familiar</strong> = 3–4 correct ·{' '}
-            <strong>Mastered</strong> = score ≥ 5, recalled ≥ 3 times correctly
-          </p>
         </div>
 
         {/* ── Reset ── */}
@@ -182,9 +243,8 @@ export default function Dashboard() {
           style={{
             width: '100%', padding: '14px', borderRadius: '1.25rem',
             fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer',
-            background: '#EAEAE8', color: '#7A7A7A',
+            background: '#EAEAE8', color: '#7A7A7A', marginBottom: 80
           }}
-          id="dash-reset-btn"
         >
           Reset All Progress
         </motion.button>

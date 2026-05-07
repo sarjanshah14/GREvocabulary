@@ -9,7 +9,7 @@ import Flashcards from './pages/Flashcards';
 import WordGroups from './pages/WordGroups';
 import WordGroupPractice from './pages/WordGroupPractice';
 import ConfusingWords from './pages/ConfusingWords';
-import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 
 const HIDE_NAV = ['/flashcards', '/groups/practice', '/confusing/practice'];
 
@@ -53,7 +53,7 @@ export default function App() {
             <Route path="/groups"         element={<WordGroups />} />
             <Route path="/groups/practice" element={<WordGroupPractice />} />
             <Route path="/confusing"      element={<ConfusingWords />} />
-            <Route path="/dashboard"      element={<Dashboard />} />
+            <Route path="/profile"        element={<Profile />} />
           </Routes>
         </div>
         {!hideNav && <Navbar />}

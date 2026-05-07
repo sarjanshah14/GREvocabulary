@@ -1,13 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, BookOpen, Layers, Grid3x3, BarChart2 } from 'lucide-react';
+import { Home, BookOpen, Layers, Grid3x3, User } from 'lucide-react';
 
 const TABS = [
   { id: 'home',     path: '/',           label: 'Home',    Icon: Home },
   { id: 'library',  path: '/library',    label: 'Library', Icon: BookOpen },
   { id: 'practice', path: '/flashcards', label: 'Cards',   Icon: Layers },
   { id: 'groups',   path: '/groups',     label: 'Groups',  Icon: Grid3x3 },
-  { id: 'progress', path: '/dashboard',  label: 'Progress',Icon: BarChart2 },
+  { id: 'profile',  path: '/profile',    label: 'Profile', Icon: User },
 ];
 
 export default function Navbar() {

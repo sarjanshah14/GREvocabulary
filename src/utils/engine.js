@@ -3,6 +3,8 @@
  * Single source of truth for all progress, mastery, streaks, and daily goals.
  */
 
+import { pushCloudData } from './sync';
+
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const KEYS = {
@@ -28,7 +30,10 @@ function ls_get(key, fallback) {
 }
 
 function ls_set(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); }
+  try { 
+    localStorage.setItem(key, JSON.stringify(value)); 
+    pushCloudData();
+  }
   catch (e) { console.warn('Storage write failed:', e); }
 }
 
