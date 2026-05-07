@@ -11,52 +11,12 @@ export default function FlashCard({ word, onSwipe }) {
   const skipOpacity = useTransform(x, [-110, -40], [1, 0]);
   const controls = useAnimation();
 
-  // Gesture tracking refs
-  const dragStarted = useRef(false);      // true once we've committed to a drag
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const axisLocked = useRef(null);        // 'x' | 'y' | null
   const isAnimating = useRef(false);
 
-  // Reset flip when word changes
-  const prevWord = useRef(word?.word);
-  if (word?.word !== prevWord.current) {
-    prevWord.current = word?.word;
-    setFlipped(false);
-  }
-
-  // ─── Touch handlers (raw — lock axis before Framer takes over) ──────────────
-
-  const onTouchStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    axisLocked.current = null;
-    dragStarted.current = false;
-  }, []);
-
-  const onTouchMove = useCallback((e) => {
-    if (isAnimating.current) { e.preventDefault(); return; }
-
-    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-
-    if (!axisLocked.current && (dx > 6 || dy > 6)) {
-      // Lock axis based on first significant movement
-      axisLocked.current = dx > dy ? 'x' : 'y';
-    }
-
-    if (axisLocked.current === 'x') {
-      // Horizontal drag — prevent page scroll
-      e.preventDefault();
-      dragStarted.current = true;
-    }
-    // If axis is 'y' let the browser scroll normally
-  }, []);
-
-  // ─── Framer drag callbacks ───────────────────────────────────────────────────
+  // Removed custom touch handlers to let Framer Motion handle drag exclusively.
 
   const handleDragStart = useCallback(() => {
-    dragStarted.current = true;
+    // optional logic
   }, []);
 
   const handleDragEnd = useCallback(async (_, info) => {
@@ -81,15 +41,13 @@ export default function FlashCard({ word, onSwipe }) {
         rotate: 0,
         transition: { type: 'spring', stiffness: 500, damping: 38 },
       });
-      dragStarted.current = false;
     }
   }, [controls, onSwipe]);
 
   const handleTap = useCallback(() => {
-    if (!dragStarted.current && !isAnimating.current) {
+    if (!isAnimating.current) {
       setFlipped((f) => !f);
     }
-    dragStarted.current = false;
   }, []);
 
   if (!word) return null;
@@ -97,9 +55,7 @@ export default function FlashCard({ word, onSwipe }) {
   return (
     <div
       className="relative w-full flip-container"
-      style={{ userSelect: 'none', touchAction: 'pan-y' }}  // allow vertical scroll by default
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
+      style={{ userSelect: 'none' }}
     >
       <motion.div
         drag="x"

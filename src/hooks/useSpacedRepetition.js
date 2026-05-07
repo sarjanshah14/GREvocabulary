@@ -6,7 +6,7 @@ export function useSpacedRepetition(allWords, mode = 'all') {
 
   const [pool] = useState(() => {
     if (mode === 'due') return getSessionPool(filtered, 50);
-    return filtered;
+    return [...filtered].sort(() => Math.random() - 0.5);
   });
 
   const [index, setIndex] = useState(0);
