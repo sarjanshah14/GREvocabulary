@@ -72,7 +72,7 @@ export default function App() {
               <Route path="/groups"         element={<WordGroups />} />
               <Route path="/groups/practice" element={<WordGroupPractice />} />
               <Route path="/confusing"      element={<ConfusingWords />} />
-              <Route path="/profile"        element={<Profile />} />
+              <Route path="/profile"        element={<Profile session={session} />} />
             </Routes>
           )}
         </div>

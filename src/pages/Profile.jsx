@@ -58,10 +58,22 @@ function Bar({ label, count, total, shade }) {
   );
 }
 
-export default function Profile() {
+export default function Profile({ session }) {
   const [showReset, setShowReset] = useState(false);
+  const [profileName, setProfileName] = useState('');
   const [, forceUpdate] = useState(0);
   const refresh = () => forceUpdate((n) => n + 1);
+
+  useEffect(() => {
+    if (session) {
+      // Fetch profile
+      supabase.from('profiles').select('name').eq('id', session.user.id).single().then(({data}) => {
+        if (data) setProfileName(data.name);
+      });
+      // Pull cloud data on mount
+      fetchCloudData(session.user.id).then(() => refresh());
+    }
+  }, [session]);
 
   // Auth State
   const handleLogout = async () => {
@@ -82,9 +94,12 @@ export default function Profile() {
       {showReset && (
         <ConfirmReset
           onCancel={() => setShowReset(false)}
-          onConfirm={() => {
+          onConfirm={async () => {
             resetAll();
             initProgress(wordlists);
+            if (session) {
+              await pushCloudData(session.user.id);
+            }
             setShowReset(false);
             refresh();
           }}
