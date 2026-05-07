@@ -26,7 +26,7 @@ export async function pushCloudData() {
         streak_last_date: streak.lastDate || null,
         daily_goal: daily.goal || 30,
         daily_count: daily.count || 0,
-        daily_last_date: daily.lastDate || null,
+        daily_last_date: daily.date || null,
         updated_at: new Date().toISOString()
       });
 
@@ -84,7 +84,7 @@ export async function fetchCloudData(userId) {
 
     if (stats) {
       localStorage.setItem('gre_streak', JSON.stringify({ current: stats.streak_current, lastDate: stats.streak_last_date }));
-      localStorage.setItem('gre_daily', JSON.stringify({ count: stats.daily_count, goal: stats.daily_goal, lastDate: stats.daily_last_date }));
+      localStorage.setItem('gre_daily', JSON.stringify({ count: stats.daily_count, goal: stats.daily_goal, date: stats.daily_last_date }));
     }
 
     // 2. Fetch Words
