@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, SlidersHorizontal, Bookmark, Heart } from 'lucide-react';
+import { ArrowLeft, SlidersHorizontal, Bookmark, Heart, X } from 'lucide-react';
 import data from '../../data.json';
 import FlashCard from '../components/FlashCard';
 import SwipeButtons from '../components/SwipeButtons';
@@ -15,15 +15,34 @@ import {
 
 const { wordlists } = data;
 
-/* ─── Mode picker sheet ─── */
-function ModeSheet({ onSelect, onClose, canClose }) {
-  const hfCount = wordlists.filter((w) => w.isHighFrequency).length;
+// ─── Counts per mode (real numbers) ────────────────────────────────────────
+
+function getModeCount(mode) {
+  const words = filterWords(wordlists, mode);
+  return words.length;
+}
+
+// ─── Mode picker sheet ───────────────────────────────────────────────────────
+// Always has a close/dismiss — tapping overlay OR X closes it.
+
+function ModeSheet({ current, onSelect, onClose }) {
+  const hfCount = filterWords(wordlists, 'high_frequency').length;
+  const bmCount = filterWords(wordlists, 'bookmarks').length;
+  const dueCount = filterWords(wordlists, 'due').length;
+
+  const modes = [
+    { id: 'all',            label: 'All Words',         desc: `${wordlists.length} words · HF appear 3× more` },
+    { id: 'high_frequency', label: '★ High Frequency',  desc: `${hfCount} essential GRE words` },
+    { id: 'bookmarks',      label: '🔖 Bookmarked',      desc: bmCount > 0 ? `${bmCount} saved words` : 'No bookmarks yet' },
+    { id: 'due',            label: '🔄 Due for Review',  desc: dueCount > 0 ? `${dueCount} words due` : 'Nothing due right now' },
+  ];
+
   return (
     <AnimatePresence>
       <motion.div
         className="sheet-overlay"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={canClose ? onClose : undefined}
+        onClick={onClose}   // tap outside = dismiss
       >
         <motion.div
           className="sheet-panel"
@@ -31,59 +50,61 @@ function ModeSheet({ onSelect, onClose, canClose }) {
           transition={{ type: 'spring', stiffness: 380, damping: 38 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', margin: '0 auto 20px' }} />
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
-            Choose Session Mode
+          {/* Handle + close row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', flex: 1, marginRight: 12 }} />
+            <motion.button
+              whileTap={{ scale: 0.85 }}
+              onClick={onClose}
+              style={{ width: 32, height: 32, borderRadius: 999, background: '#EAEAE8', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+              id="mode-close-btn"
+              aria-label="Close"
+            >
+              <X size={15} color="#888" strokeWidth={2.5} />
+            </motion.button>
+          </div>
+
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
+            Session Mode
           </h2>
-          <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 20px' }}>
-            All modes draw from the complete word pool
+          <p style={{ fontSize: 12, color: '#ADADAD', margin: '0 0 16px' }}>
+            Tap to switch · swipe right = Know · left = Skip
           </p>
 
-          {[
-            { id: 'all',            label: '📚 All Words',           desc: `${wordlists.length} words · HF words appear 3× more` },
-            { id: 'high_frequency', label: '★ High Frequency only',  desc: `${hfCount} essential GRE words` },
-            { id: 'bookmarks',      label: '🔖 Bookmarked',           desc: 'Only words you saved' },
-            { id: 'due',            label: '🔄 Due for Review',       desc: 'Spaced repetition queue' },
-          ].map((m) => (
-            <motion.button
-              key={m.id}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onSelect(m.id)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 16px', borderRadius: 16, marginBottom: 8,
-                background: '#F4F4F2', border: 'none', cursor: 'pointer', textAlign: 'left',
-              }}
-              id={`mode-${m.id}`}
-            >
-              <div>
-                <p style={{ fontWeight: 600, color: '#111', margin: 0 }}>{m.label}</p>
-                <p style={{ fontSize: 12, color: '#ADADAD', margin: '2px 0 0' }}>{m.desc}</p>
-              </div>
-              <span style={{ color: '#CCC', fontSize: 20, lineHeight: 1 }}>›</span>
-            </motion.button>
-          ))}
-
-          {canClose && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onClose}
-              className="btn-secondary pressable w-full"
-              style={{ marginTop: 8, padding: '12px', borderRadius: '1.25rem', fontSize: 14 }}
-              id="mode-cancel"
-            >
-              Cancel
-            </motion.button>
-          )}
+          {modes.map((m) => {
+            const isActive = m.id === current;
+            return (
+              <motion.button
+                key={m.id}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onSelect(m.id)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 16px', borderRadius: 14, marginBottom: 8,
+                  background: isActive ? '#222' : '#F4F4F2',
+                  border: 'none', cursor: 'pointer', textAlign: 'left',
+                  transition: 'background 0.15s',
+                }}
+                id={`mode-${m.id}`}
+              >
+                <div>
+                  <p style={{ fontWeight: 600, color: isActive ? '#fff' : '#111', margin: 0 }}>{m.label}</p>
+                  <p style={{ fontSize: 12, color: isActive ? 'rgba(255,255,255,0.6)' : '#ADADAD', margin: '2px 0 0' }}>{m.desc}</p>
+                </div>
+                {isActive && <span style={{ color: '#fff', fontSize: 16 }}>✓</span>}
+              </motion.button>
+            );
+          })}
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
 }
 
-/* ─── Session complete ─── */
+// ─── Session complete ─────────────────────────────────────────────────────────
+
 function SessionDone({ total, mode, onRestart, onHome }) {
-  useState(() => { incrementSessions(); updateStreak(); });
+  useEffect(() => { incrementSessions(); updateStreak(); }, []);
 
   const modeLabel = {
     all: 'All Words',
@@ -108,7 +129,7 @@ function SessionDone({ total, mode, onRestart, onHome }) {
       <h2 style={{ fontSize: 32, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
         Session Complete!
       </h2>
-      <p style={{ fontSize: 14, color: '#ADADAD', margin: '0 0 6px' }}>Mode: {modeLabel}</p>
+      <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 6px' }}>Mode: {modeLabel}</p>
       <p style={{ fontSize: 80, fontWeight: 900, color: '#111', lineHeight: 1, margin: '0 0 4px' }}>
         {total}
       </p>
@@ -117,34 +138,32 @@ function SessionDone({ total, mode, onRestart, onHome }) {
       </p>
 
       <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={onRestart}
+        whileTap={{ scale: 0.97 }} onClick={onRestart}
         className="btn-primary pressable w-full"
         style={{ marginBottom: 12, padding: '16px', borderRadius: '1.25rem', fontSize: 16, fontWeight: 700 }}
-        id="fc-restart"
-      >
+        id="fc-restart">
         Practice Again
       </motion.button>
       <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={onHome}
+        whileTap={{ scale: 0.97 }} onClick={onHome}
         className="btn-secondary pressable w-full"
         style={{ padding: '14px', borderRadius: '1.25rem', fontSize: 14, fontWeight: 600 }}
-        id="fc-home"
-      >
+        id="fc-home">
         Go Home
       </motion.button>
     </div>
   );
 }
 
-/* ─── Main page ─── */
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function Flashcards() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlMode = searchParams.get('mode');
 
-  const [showSheet, setShowSheet] = useState(!urlMode);
+  // NEVER force-show mode sheet on load. Always start immediately.
+  const [showSheet, setShowSheet] = useState(false);
   const [mode, setMode] = useState(urlMode || 'all');
   const [sessionKey, setSessionKey] = useState(0);
   const [bookmarks, setBookmarks] = useState(() => getBookmarks());
@@ -153,23 +172,13 @@ export default function Flashcards() {
   const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode);
   const daily = getDailyGoal();
 
-  const handleSelect = (m) => { setMode(m); setShowSheet(false); };
-  const handleFav  = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
-  const handleBook = () => { if (current) setBookmarks([...toggleBookmark(current.word)]); };
-  const handleRestart = () => { setShowSheet(true); setSessionKey((k) => k + 1); };
+  // Real word count for the selected mode (not the pool cap)
+  const modeTotal = getModeCount(mode);
 
-  // Label for the current deck size
-  const deckLabel = () => {
-    if (mode === 'high_frequency') {
-      const hf = filterWords(wordlists, 'high_frequency');
-      return `${hf.length} high-frequency words`;
-    }
-    if (mode === 'bookmarks') {
-      const bm = filterWords(wordlists, 'bookmarks');
-      return `${bm.length} bookmarked word${bm.length !== 1 ? 's' : ''}`;
-    }
-    return `${wordlists.length} words`;
-  };
+  const handleSelect = (m) => { setMode(m); setShowSheet(false); };
+  const handleFav   = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
+  const handleBook  = () => { if (current) setBookmarks([...toggleBookmark(current.word)]); };
+  const handleRestart = () => { setShowSheet(false); setSessionKey((k) => k + 1); };
 
   const modeNames = {
     all: 'All Words',
@@ -182,10 +191,18 @@ export default function Flashcards() {
   const isBook = current ? bookmarks.includes(current.word) : false;
 
   if (isDone && !showSheet) {
-    return <SessionDone total={total} mode={mode} onRestart={handleRestart} onHome={() => navigate('/')} />;
+    return (
+      <SessionDone
+        total={total}
+        mode={mode}
+        onRestart={handleRestart}
+        onHome={() => navigate('/')}
+      />
+    );
   }
 
   const pct = total > 0 ? (index / total) * 100 : 0;
+  const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
 
   return (
     <div key={sessionKey} className="page-in" style={{
@@ -193,75 +210,80 @@ export default function Flashcards() {
       minHeight: '100dvh', background: '#F2F2F0',
     }}>
       {showSheet && (
-        <ModeSheet onSelect={handleSelect} onClose={() => setShowSheet(false)} canClose={!!urlMode} />
+        <ModeSheet
+          current={mode}
+          onSelect={handleSelect}
+          onClose={() => setShowSheet(false)}
+        />
       )}
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '68px 20px 12px' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: 'max(env(safe-area-inset-top, 0px) + 16px, 56px) 20px 10px',
+      }}>
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/')}
-          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
+          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer', flexShrink: 0 }}
           id="fc-back">
           <ArrowLeft size={18} color="#777" strokeWidth={2} />
         </motion.button>
 
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>{modeNames[mode] || 'All Words'}</p>
+        <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
+          <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>
+            {modeNames[mode] || 'All Words'}
+          </p>
           <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
-            {index} of {total} · Goal: <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>{daily.count}/{daily.goal}</strong> today
+            {index} of {modeTotal} · Goal:{' '}
+            <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>
+              {daily.count}/{daily.goal}
+            </strong>
           </p>
         </div>
 
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowSheet(true)}
-          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
+          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer', flexShrink: 0 }}
           id="fc-mode-btn">
           <SlidersHorizontal size={16} color="#777" strokeWidth={2} />
         </motion.button>
       </div>
 
-      {/* ── Progress bars ── */}
-      <div style={{ padding: '0 20px 12px' }}>
-        {/* Session progress */}
+      {/* ── Dual progress bars ── */}
+      <div style={{ padding: '4px 20px 12px' }}>
+        {/* Session bar */}
         <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden', marginBottom: 6 }}>
           <motion.div
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.3 }}
+            animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }}
             style={{ height: '100%', background: '#333', borderRadius: 999 }}
           />
         </div>
-        {/* Daily goal progress */}
+        {/* Daily goal bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, height: 3, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
             <motion.div
-              animate={{ width: `${Math.min(100, Math.round((daily.count / daily.goal) * 100))}%` }}
-              transition={{ duration: 0.5 }}
+              animate={{ width: `${goalPct}%` }} transition={{ duration: 0.5 }}
               style={{ height: '100%', background: '#ADADAD', borderRadius: 999 }}
             />
           </div>
           <p style={{ fontSize: 10, color: '#ADADAD', whiteSpace: 'nowrap', margin: 0 }}>
-            {daily.count >= daily.goal ? '✓ Daily goal done' : `${daily.count}/${daily.goal} daily goal`}
+            {daily.count >= daily.goal ? '✓ Goal done' : `${daily.count}/${daily.goal} today`}
           </p>
         </div>
       </div>
 
-      {/* ── Fav / Bookmark row ── */}
+      {/* ── Fav / Bookmark ── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '0 20px 8px' }}>
         {[
-          { fn: handleFav,  Icon: Heart,     filled: isFav,  id: 'fc-fav-btn',      label: 'Favourite' },
-          { fn: handleBook, Icon: Bookmark,  filled: isBook, id: 'fc-bookmark-btn', label: 'Bookmark' },
+          { fn: handleFav,  Icon: Heart,    filled: isFav,  id: 'fc-fav-btn',      label: 'Favourite' },
+          { fn: handleBook, Icon: Bookmark, filled: isBook, id: 'fc-bookmark-btn', label: 'Bookmark' },
         ].map(({ fn, Icon, filled, id, label }) => (
-          <motion.button
-            key={id}
-            whileTap={{ scale: 0.85 }}
-            onClick={fn}
-            disabled={!current}
+          <motion.button key={id} whileTap={{ scale: 0.85 }} onClick={fn} disabled={!current}
             aria-label={label}
             style={{
               width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 1px 6px rgba(0,0,0,0.07)', cursor: 'pointer', opacity: current ? 1 : 0.3,
             }}
-            id={id}
-          >
+            id={id}>
             <Icon size={17} fill={filled ? '#222' : 'none'} color={filled ? '#222' : '#CCC'} strokeWidth={2} />
           </motion.button>
         ))}
@@ -291,7 +313,12 @@ export default function Flashcards() {
 
       {/* ── Swipe buttons ── */}
       <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0 140px' }}>
-        <SwipeButtons onLeft={() => swipe('left')} onRight={() => swipe('right')} disabled={!current} word={current?.word} />
+        <SwipeButtons
+          onLeft={() => swipe('left')}
+          onRight={() => swipe('right')}
+          disabled={!current}
+          word={current?.word}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
+import { useState, useCallback } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './components/Navbar';
+import SplashScreen from './components/SplashScreen';
 import Home from './pages/Home';
 import WordLibrary from './pages/WordLibrary';
 import Flashcards from './pages/Flashcards';
@@ -13,21 +16,39 @@ const HIDE_NAV = ['/flashcards', '/groups/practice', '/confusing/practice'];
 export default function App() {
   const loc = useLocation();
   const hideNav = HIDE_NAV.some((p) => loc.pathname.startsWith(p));
+  const [splashDone, setSplashDone] = useState(false);
+
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
 
   return (
-    <div className="app-shell">
-      <div className="page-wrap">
-        <Routes>
-          <Route path="/"               element={<Home />} />
-          <Route path="/library"        element={<WordLibrary />} />
-          <Route path="/flashcards"     element={<Flashcards />} />
-          <Route path="/groups"         element={<WordGroups />} />
-          <Route path="/groups/practice" element={<WordGroupPractice />} />
-          <Route path="/confusing"      element={<ConfusingWords />} />
-          <Route path="/dashboard"      element={<Dashboard />} />
-        </Routes>
-      </div>
-      {!hideNav && <Navbar />}
-    </div>
+    <>
+      {/* Splash — renders above everything, unmounts when done */}
+      <AnimatePresence>
+        {!splashDone && (
+          <SplashScreen onDone={handleSplashDone} />
+        )}
+      </AnimatePresence>
+
+      {/* Main app shell — rendered underneath, fades in as splash exits */}
+      <motion.div
+        className="app-shell"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: splashDone ? 1 : 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
+        <div className="page-wrap">
+          <Routes>
+            <Route path="/"               element={<Home />} />
+            <Route path="/library"        element={<WordLibrary />} />
+            <Route path="/flashcards"     element={<Flashcards />} />
+            <Route path="/groups"         element={<WordGroups />} />
+            <Route path="/groups/practice" element={<WordGroupPractice />} />
+            <Route path="/confusing"      element={<ConfusingWords />} />
+            <Route path="/dashboard"      element={<Dashboard />} />
+          </Routes>
+        </div>
+        {!hideNav && <Navbar />}
+      </motion.div>
+    </>
   );
 }

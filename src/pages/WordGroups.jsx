@@ -48,7 +48,7 @@ export default function WordGroups() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(new Set());
-  const [selectedWord, setSelectedWord] = useState(null);
+  // Word chips are display-only — no detail sheet needed
 
   const filtered = useMemo(() => {
     if (!search.trim()) return wordgroups;
@@ -121,11 +121,12 @@ export default function WordGroups() {
                     <div className="px-4 pb-4 pt-1" style={{ borderTop: '1px solid #F0EDE8' }}>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {group.words.map((w, i) => (
-                          <motion.button key={i} whileTap={{ scale: 0.93 }} onClick={() => setSelectedWord(w)}
-                            className="chip chip-lavender pressable" style={{ cursor: 'pointer', border: 'none' }}
-                            id={`wchip-${w}-${i}`}>
+                          <span key={i}
+                            className="chip chip-lavender"
+                            style={{ userSelect: 'none' }}
+                          >
                             {w}
-                          </motion.button>
+                          </span>
                         ))}
                       </div>
                       {group.antonyms?.length > 0 && (
@@ -133,11 +134,12 @@ export default function WordGroups() {
                           <p className="section-label mb-2">Antonyms</p>
                           <div className="flex flex-wrap gap-2">
                             {group.antonyms.map((w, i) => (
-                              <motion.button key={i} whileTap={{ scale: 0.93 }} onClick={() => setSelectedWord(w)}
-                                className="chip chip-red pressable" style={{ cursor: 'pointer', border: 'none' }}
-                                id={`achip-${w}-${i}`}>
+                              <span key={i}
+                                className="chip chip-ant"
+                                style={{ userSelect: 'none' }}
+                              >
                                 {w}
-                              </motion.button>
+                              </span>
                             ))}
                           </div>
                         </div>
