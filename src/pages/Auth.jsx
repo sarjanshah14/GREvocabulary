@@ -63,19 +63,9 @@ export default function Auth() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         style={{ textAlign: 'center', marginBottom: 40 }}
       >
-        <div style={{ 
-          width: 64, height: 64, background: '#111', borderRadius: 20, 
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          margin: '0 auto 16px', boxShadow: '0 12px 24px rgba(0,0,0,0.1)' 
-        }}>
-          <span style={{ fontSize: 32, color: '#fff', fontWeight: 900, fontFamily: 'serif' }}>G</span>
-        </div>
-        <h1 style={{ fontSize: 36, fontWeight: 900, color: '#111', letterSpacing: '-0.04em', margin: '0 0 8px' }}>
+        <h1 style={{ fontSize: 42, fontWeight: 900, color: '#111', letterSpacing: '-0.04em', margin: '0' }}>
           GRE Lexicon
         </h1>
-        <p style={{ fontSize: 15, color: '#777', margin: 0, fontWeight: 500 }}>
-          Master 775 essential words.
-        </p>
       </motion.div>
       
       <motion.div 
