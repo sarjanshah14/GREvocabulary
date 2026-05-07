@@ -1,61 +1,124 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
-const SWIPE_THRESHOLD = 100;
+const SWIPE_THRESHOLD = 80;  // px to trigger a swipe
 
 export default function FlashCard({ word, onSwipe }) {
   const [flipped, setFlipped] = useState(false);
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-16, 0, 16]);
-  const knowOpacity = useTransform(x, [50, 130], [0, 1]);
-  const skipOpacity = useTransform(x, [-130, -50], [1, 0]);
+  const rotate = useTransform(x, [-220, 0, 220], [-18, 0, 18]);
+  const knowOpacity = useTransform(x, [40, 110], [0, 1]);
+  const skipOpacity = useTransform(x, [-110, -40], [1, 0]);
   const controls = useAnimation();
-  const isDragging = useRef(false);
 
-  // Reset flip when card changes
+  // Gesture tracking refs
+  const dragStarted = useRef(false);      // true once we've committed to a drag
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const axisLocked = useRef(null);        // 'x' | 'y' | null
+  const isAnimating = useRef(false);
+
+  // Reset flip when word changes
   const prevWord = useRef(word?.word);
   if (word?.word !== prevWord.current) {
     prevWord.current = word?.word;
     setFlipped(false);
   }
 
-  const handleDragStart = () => { isDragging.current = true; };
+  // ─── Touch handlers (raw — lock axis before Framer takes over) ──────────────
 
-  const handleDragEnd = async (_, info) => {
+  const onTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    axisLocked.current = null;
+    dragStarted.current = false;
+  }, []);
+
+  const onTouchMove = useCallback((e) => {
+    if (isAnimating.current) { e.preventDefault(); return; }
+
+    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+
+    if (!axisLocked.current && (dx > 6 || dy > 6)) {
+      // Lock axis based on first significant movement
+      axisLocked.current = dx > dy ? 'x' : 'y';
+    }
+
+    if (axisLocked.current === 'x') {
+      // Horizontal drag — prevent page scroll
+      e.preventDefault();
+      dragStarted.current = true;
+    }
+    // If axis is 'y' let the browser scroll normally
+  }, []);
+
+  // ─── Framer drag callbacks ───────────────────────────────────────────────────
+
+  const handleDragStart = useCallback(() => {
+    dragStarted.current = true;
+  }, []);
+
+  const handleDragEnd = useCallback(async (_, info) => {
+    if (isAnimating.current) return;
     const delta = info.offset.x;
+
     if (Math.abs(delta) > SWIPE_THRESHOLD) {
+      isAnimating.current = true;
       const dir = delta > 0 ? 'right' : 'left';
       await controls.start({
-        x: dir === 'right' ? 600 : -600,
+        x: dir === 'right' ? 700 : -700,
         opacity: 0,
-        rotate: dir === 'right' ? 18 : -18,
-        transition: { duration: 0.28, ease: 'easeIn' },
+        rotate: dir === 'right' ? 22 : -22,
+        transition: { duration: 0.26, ease: [0.32, 0, 0.67, 0] },
       });
+      isAnimating.current = false;
       onSwipe(dir);
     } else {
-      controls.start({ x: 0, rotate: 0, transition: { type: 'spring', stiffness: 450, damping: 32 } });
+      // Snap back with spring
+      controls.start({
+        x: 0,
+        rotate: 0,
+        transition: { type: 'spring', stiffness: 500, damping: 38 },
+      });
+      dragStarted.current = false;
     }
-    isDragging.current = false;
-  };
+  }, [controls, onSwipe]);
 
-  const handleTap = () => {
-    if (!isDragging.current) setFlipped((f) => !f);
-  };
+  const handleTap = useCallback(() => {
+    if (!dragStarted.current && !isAnimating.current) {
+      setFlipped((f) => !f);
+    }
+    dragStarted.current = false;
+  }, []);
 
   if (!word) return null;
 
   return (
-    <div className="relative w-full flip-container" style={{ userSelect: 'none' }}>
+    <div
+      className="relative w-full flip-container"
+      style={{ userSelect: 'none', touchAction: 'pan-y' }}  // allow vertical scroll by default
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+    >
       <motion.div
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.75}
+        dragElastic={0.55}
+        dragMomentum={false}          // no flyaway after release
+        dragTransition={{ bounceStiffness: 500, bounceDamping: 40 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         animate={controls}
         onClick={handleTap}
         className="relative w-full"
-        style={{ x, rotate, cursor: 'grab' }}
+        style={{
+          x, rotate,
+          cursor: 'grab',
+          // Prevent card from scrolling page while being held
+          touchAction: 'none',
+        }}
+        whileDrag={{ cursor: 'grabbing', scale: 1.01 }}
       >
         {/* KNOW label */}
         <motion.div className="swipe-label-know" style={{ opacity: knowOpacity }}>
@@ -66,11 +129,12 @@ export default function FlashCard({ word, onSwipe }) {
           SKIP ✗
         </motion.div>
 
+        {/* Card flip */}
         <div
           className="flip-inner w-full"
           style={{
             transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            transition: 'transform 0.5s cubic-bezier(0.4,0,0.2,1)',
+            transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
             minHeight: 340,
           }}
         >
@@ -82,7 +146,6 @@ export default function FlashCard({ word, onSwipe }) {
             {word.isHighFrequency && (
               <span className="star-badge mb-4">★ High Frequency</span>
             )}
-            <span className="section-label mb-3">Wordlist {word.wordlistNumber}</span>
             <h1
               className="font-black leading-none mb-4"
               style={{
@@ -102,7 +165,7 @@ export default function FlashCard({ word, onSwipe }) {
               </p>
             )}
             <p className="text-xs mt-8 font-medium" style={{ color: '#CCCCCC' }}>
-              Tap to reveal · Swipe to score
+              Tap to reveal · Hold & drag to swipe
             </p>
           </div>
 

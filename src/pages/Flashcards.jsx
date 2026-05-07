@@ -291,7 +291,7 @@ export default function Flashcards() {
 
       {/* ── Swipe buttons ── */}
       <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0 140px' }}>
-        <SwipeButtons onLeft={() => swipe('left')} onRight={() => swipe('right')} disabled={!current} />
+        <SwipeButtons onLeft={() => swipe('left')} onRight={() => swipe('right')} disabled={!current} word={current?.word} />
       </div>
     </div>
   );
