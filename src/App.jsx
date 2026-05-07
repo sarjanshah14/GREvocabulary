@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './components/Navbar';
@@ -17,6 +17,13 @@ export default function App() {
   const loc = useLocation();
   const hideNav = HIDE_NAV.some((p) => loc.pathname.startsWith(p));
   const [splashDone, setSplashDone] = useState(false);
+
+  useEffect(() => {
+    // Initialize dark mode from localStorage
+    if (localStorage.getItem('gre_dark_mode') === 'true') {
+      document.documentElement.classList.add('dark-mode');
+    }
+  }, []);
 
   const handleSplashDone = useCallback(() => setSplashDone(true), []);
 

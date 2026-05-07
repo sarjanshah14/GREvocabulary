@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Layers, Grid3x3, HelpCircle, BarChart2 } from 'lucide-react';
+import { BookOpen, Layers, Grid3x3, HelpCircle, BarChart2, Moon, Sun } from 'lucide-react';
 import data from '../../data.json';
 import { getAllStats, getDailyGoal } from '../utils/engine';
 
@@ -10,6 +10,14 @@ const { wordlists } = data;
 export default function Home() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('all');
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('gre_dark_mode') === 'true');
+
+  const toggleDark = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('gre_dark_mode', next);
+    document.documentElement.classList.toggle('dark-mode', next);
+  };
 
   const stats = getAllStats(wordlists);
   const daily = getDailyGoal();
@@ -30,11 +38,20 @@ export default function Home() {
     <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
 
       {/* ── Header ── */}
-      <div className="px-5 pb-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
-          GRE Lexicon
-        </h1>
-        <p style={{ color: '#ADADAD', fontSize: 13, marginTop: 2 }}>Daily vocabulary mastery</p>
+      <div className="px-5 pb-4 flex justify-between items-end" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
+            GRE Lexicon
+          </h1>
+          <p style={{ color: '#ADADAD', fontSize: 13, marginTop: 2 }}>Daily vocabulary mastery</p>
+        </div>
+        <motion.button 
+          whileTap={{ scale: 0.85 }} 
+          onClick={toggleDark} 
+          style={{ background: 'transparent', border: 'none', padding: 8, margin: 0, cursor: 'pointer', color: '#111', display: 'flex' }}
+        >
+          {isDark ? <Sun size={24} strokeWidth={2.5} /> : <Moon size={24} strokeWidth={2.5} />}
+        </motion.button>
       </div>
 
       {/* ── 3 Stat Cards ── */}

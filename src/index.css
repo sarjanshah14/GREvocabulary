@@ -45,6 +45,20 @@ html, body {
 .pt-safe-top { padding-top: env(safe-area-inset-top, 0px); }
 .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
+/* ─── Global Dark Mode (Invert Filter Strategy) ─── */
+html.dark-mode {
+  filter: invert(1) hue-rotate(180deg);
+  background: #0D0D0F; /* Inverse of #F2F2F0 */
+}
+html.dark-mode img,
+html.dark-mode video,
+html.dark-mode .preserve-color {
+  filter: invert(1) hue-rotate(180deg);
+}
+html.dark-mode #splash-screen {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 
 /* ─── Phone Container ───────────────────────── */
 .app-shell {

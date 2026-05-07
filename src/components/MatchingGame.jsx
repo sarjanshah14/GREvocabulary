@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveGameScore } from '../utils/engine';
 import { CheckCircle2, XCircle, CircleDashed } from 'lucide-react';
@@ -11,7 +11,7 @@ export default function MatchingGame({ group, allWords, onNext }) {
   // Build the chip pool for THIS round:
   // correct = group words that exist in the allWords dataset
   // decoys  = 5 random words NOT in the group
-  const [chips, correctInRound] = useState(() => {
+  const [chips, correctInRound] = useMemo(() => {
     try {
       if (!group || !Array.isArray(group.words)) return [[], []];
 
@@ -31,7 +31,7 @@ export default function MatchingGame({ group, allWords, onNext }) {
       console.error('MatchingGame init error:', e);
       return [[], []];
     }
-  });
+  }, [group, allWords]);
 
   // correctInRound is what the user CAN possibly select — this is what accuracy is measured against
   const correctSet = new Set(correctInRound.map((w) => w.toLowerCase()));
