@@ -1,47 +1,59 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import data from '../../data.json';
-import ProgressBar from '../components/ProgressBar';
-import {
-  getProgress, getStreak, getSessions,
-  getOverallStats, getGameScores, resetAll, initializeProgress,
-} from '../utils/storage';
+import { getAllStats, getDailyGoal, getGameScores, resetAll, initProgress } from '../utils/engine';
 
 const { wordlists } = data;
-const totalWords = wordlists.length;
-const hfWords = wordlists.filter((w) => w.isHighFrequency);
 
-function ResetSheet({ onClose, onResetAll }) {
-  const [confirm, setConfirm] = useState(false);
+function ConfirmReset({ onCancel, onConfirm }) {
+  const [step, setStep] = useState(0);
   return (
-    <div className="sheet-overlay" onClick={onClose}>
+    <div className="sheet-overlay" onClick={onCancel}>
       <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: '#E4E4E2' }} />
-        <h2 className="text-xl font-black mb-1" style={{ color: '#111111' }}>Reset All Progress</h2>
-        <p className="text-sm mb-6" style={{ color: '#ADADAD' }}>
-          This will erase your mastery scores for all {totalWords} words. This cannot be undone.
+        <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', margin: '0 auto 20px' }} />
+        <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 8px' }}>Reset All Progress</h2>
+        <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 24px', lineHeight: 1.6 }}>
+          This erases mastery scores for all {wordlists.length} words, your streak, and daily goal. Cannot be undone.
         </p>
-        {!confirm ? (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setConfirm(true)}
-            className="w-full py-4 rounded-2xl font-bold mb-3 pressable"
-            style={{ background: '#333333', color: '#FFFFFF', border: 'none', cursor: 'pointer', borderRadius: '1.25rem' }}
+        {step === 0 ? (
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStep(1)}
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#333', color: '#fff', marginBottom: 10 }}
             id="reset-confirm-btn">
-            Yes, Reset Everything
+            Yes, reset everything
           </motion.button>
         ) : (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={onResetAll}
-            className="w-full py-4 rounded-2xl font-bold mb-3 pressable"
-            style={{ background: '#111111', color: '#FFFFFF', border: 'none', cursor: 'pointer', borderRadius: '1.25rem' }}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onConfirm}
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginBottom: 10 }}
             id="reset-final-btn">
-            Confirm Reset ✓
+            Confirm — erase all data ✓
           </motion.button>
         )}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-          className="w-full py-3 rounded-2xl font-semibold pressable btn-secondary"
-          style={{ borderRadius: '1.25rem' }} id="reset-cancel">
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onCancel}
+          className="btn-secondary pressable w-full"
+          style={{ padding: '12px', borderRadius: '1.25rem' }} id="reset-cancel">
           Cancel
         </motion.button>
       </div>
+    </div>
+  );
+}
+
+function Bar({ label, count, total, shade }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+      <div style={{ width: 72, flexShrink: 0, fontSize: 11, fontWeight: 700, color: shade === '#EAEAE8' ? '#ADADAD' : '#fff', background: shade, padding: '4px 0', borderRadius: 8, textAlign: 'center' }}>
+        {label}
+      </div>
+      <div style={{ flex: 1, height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          style={{ height: '100%', background: shade === '#EAEAE8' ? '#D0D0CE' : shade, borderRadius: 999 }}
+        />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#9A9A9A', minWidth: 28, textAlign: 'right' }}>{count}</span>
     </div>
   );
 }
@@ -51,127 +63,129 @@ export default function Dashboard() {
   const [, forceUpdate] = useState(0);
   const refresh = () => forceUpdate((n) => n + 1);
 
-  const streak = getStreak();
-  const sessions = getSessions();
-  const overall = getOverallStats(wordlists);
+  const stats = getAllStats(wordlists);
+  const daily = getDailyGoal();
   const gameScores = getGameScores();
-  const progress = getProgress();
-
-  const hfMastered = hfWords.filter((w) => (progress[w.word]?.score || 0) >= 3).length;
-  const hfPct = hfWords.length ? Math.round((hfMastered / hfWords.length) * 100) : 0;
-
   const groupAccs = Object.values(gameScores).map((s) => s.accuracy);
-  const groupAvg = groupAccs.length ? Math.round(groupAccs.reduce((a, b) => a + b, 0) / groupAccs.length) : 0;
+  const groupAvg = groupAccs.length
+    ? Math.round(groupAccs.reduce((a, b) => a + b, 0) / groupAccs.length)
+    : 0;
 
-  // Mastery breakdown buckets
-  const buckets = { unseen: 0, learning: 0, familiar: 0, mastered: 0 };
-  wordlists.forEach((w) => {
-    const score = progress[w.word]?.score || 0;
-    if (score === 0)      buckets.unseen++;
-    else if (score <= 2)  buckets.learning++;
-    else if (score <= 4)  buckets.familiar++;
-    else                  buckets.mastered++;
-  });
+  const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
 
   return (
-    <div className="page-in min-h-screen" style={{ background: '#F2F2F0' }}>
+    <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
       {showReset && (
-        <ResetSheet
-          onClose={() => setShowReset(false)}
-          onResetAll={() => { resetAll(); initializeProgress(wordlists); setShowReset(false); refresh(); }}
+        <ConfirmReset
+          onCancel={() => setShowReset(false)}
+          onConfirm={() => {
+            resetAll();
+            initProgress(wordlists);
+            setShowReset(false);
+            refresh();
+          }}
         />
       )}
 
-      <div className="px-5 pt-14 pb-8">
-        <h1 className="text-3xl font-black mb-1" style={{ letterSpacing: '-0.03em', color: '#111111' }}>My Progress</h1>
-        <p className="text-sm mb-6" style={{ color: '#ADADAD' }}>
-          {totalWords} total words · {hfWords.length} high frequency
+      <div style={{ padding: '52px 20px 32px' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: '0 0 4px' }}>
+          My Progress
+        </h1>
+        <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 24px' }}>
+          {wordlists.length} total words · {stats.hfTotal} high frequency
         </p>
 
-        {/* ── Overall mastery ring + stats ── */}
-        <div className="card p-5 mb-4 flex items-center gap-5">
-          <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#E4E4E2" strokeWidth="4"/>
-              <circle cx="18" cy="18" r="14" fill="none" stroke="#222222" strokeWidth="4"
-                strokeDasharray={`${(overall.pct / 100) * 87.96} 87.96`} strokeLinecap="round"/>
+        {/* ── Overall ring + mastered ── */}
+        <div className="card" style={{ padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
+            <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }} viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#EAEAE8" strokeWidth="4" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#222" strokeWidth="4"
+                strokeDasharray={`${(stats.pct / 100) * 87.96} 87.96`} strokeLinecap="round" />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-black leading-none" style={{ color: '#111111' }}>{overall.pct}%</span>
-              <span className="text-[9px]" style={{ color: '#ADADAD' }}>done</span>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 900, color: '#111' }}>{stats.pct}%</span>
             </div>
           </div>
-          <div className="flex-1">
-            <p className="font-black text-2xl" style={{ color: '#111111' }}>{overall.mastered}</p>
-            <p className="text-sm" style={{ color: '#ADADAD' }}>of {totalWords} words mastered</p>
-            <div className="mt-2">
-              <ProgressBar value={overall.mastered} max={totalWords} height={6} />
+          <div>
+            <p style={{ fontSize: 36, fontWeight: 900, color: '#111', lineHeight: 1, margin: 0 }}>{stats.mastered}</p>
+            <p style={{ fontSize: 13, color: '#ADADAD', margin: '4px 0 0' }}>of {stats.total} words mastered</p>
+            <p style={{ fontSize: 11, color: '#ADADAD', margin: '2px 0 0' }}>
+              Mastered = score ≥ 5 · recalled ≥ 3 times
+            </p>
+          </div>
+        </div>
+
+        {/* ── Stat row ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {[
+            { label: 'Studied',    val: stats.studied },
+            { label: 'Streak',     val: stats.streak.current > 0 ? `🔥 ${stats.streak.current}d` : '—' },
+            { label: 'Group Avg',  val: `${groupAvg}%` },
+          ].map(({ label, val }) => (
+            <div key={label} className="stat-card">
+              <p style={{ fontSize: 22, fontWeight: 900, color: '#111', lineHeight: 1, margin: 0 }}>{val}</p>
+              <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 4 }}>{label}</p>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* ── Stat grid ── */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="stat-card">
-            <p className="text-2xl font-black" style={{ color: '#111111' }}>{overall.studied}</p>
-            <p className="text-xs" style={{ color: '#ADADAD' }}>Studied</p>
+        {/* ── Daily goal ── */}
+        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>Daily Goal</p>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{daily.count} / {daily.goal}</span>
           </div>
-          <div className="stat-card">
-            <p className="text-2xl font-black" style={{ color: '#111111' }}>
-              {streak.currentStreak > 0 ? `🔥${streak.currentStreak}` : sessions}
-            </p>
-            <p className="text-xs" style={{ color: '#ADADAD' }}>
-              {streak.currentStreak > 0 ? 'Streak' : 'Sessions'}
-            </p>
+          <div style={{ height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${goalPct}%` }} transition={{ duration: 0.7 }}
+              style={{ height: '100%', background: '#333', borderRadius: 999 }} />
           </div>
-          <div className="stat-card">
-            <p className="text-2xl font-black" style={{ color: '#111111' }}>{groupAvg}%</p>
-            <p className="text-xs" style={{ color: '#ADADAD' }}>Group avg</p>
-          </div>
+          <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 6 }}>
+            {daily.count >= daily.goal ? '✓ Goal complete today!' : `${daily.goal - daily.count} more words to reach today's goal`}
+          </p>
         </div>
 
-        {/* ── HF progress ── */}
-        <div className="card p-4 mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <p className="font-bold text-sm" style={{ color: '#111111' }}>★ High Frequency Words</p>
-            <span className="text-sm font-black" style={{ color: '#555' }}>{hfPct}%</span>
+        {/* ── HF Progress ── */}
+        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>★ High Frequency Words</p>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{stats.hfPct}%</span>
           </div>
-          <ProgressBar value={hfMastered} max={hfWords.length} height={8} />
-          <p className="text-xs mt-1.5" style={{ color: '#ADADAD' }}>{hfMastered} / {hfWords.length} mastered</p>
+          <div style={{ height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${stats.hfPct}%` }} transition={{ duration: 0.7 }}
+              style={{ height: '100%', background: '#555', borderRadius: 999 }} />
+          </div>
+          <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 6 }}>
+            {stats.hfMastered} / {stats.hfTotal} high-frequency words mastered
+          </p>
         </div>
 
-        {/* ── Mastery breakdown ── */}
-        <div className="card p-4 mb-6">
-          <p className="font-bold text-sm mb-4" style={{ color: '#111111' }}>Mastery Breakdown</p>
-          <div className="flex flex-col gap-3">
-            {[
-              { label: 'Unseen',   count: buckets.unseen,   bg: '#ECECEA', color: '#ADADAD' },
-              { label: 'Learning', count: buckets.learning,  bg: '#D4D4D2', color: '#555555' },
-              { label: 'Familiar', count: buckets.familiar,  bg: '#888888', color: '#FFFFFF' },
-              { label: 'Mastered', count: buckets.mastered,  bg: '#222222', color: '#FFFFFF' },
-            ].map((b) => (
-              <div key={b.label} className="flex items-center gap-3">
-                <div className="w-20 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: b.bg }}>
-                  <span className="text-xs font-bold" style={{ color: b.color }}>{b.label}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="progress-track" style={{ height: 6 }}>
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${totalWords > 0 ? (b.count / totalWords) * 100 : 0}%`, background: b.bg === '#ECECEA' ? '#D0D0CE' : b.bg }} />
-                  </div>
-                </div>
-                <span className="text-sm font-bold w-8 text-right" style={{ color: '#7A7A7A' }}>{b.count}</span>
-              </div>
-            ))}
-          </div>
+        {/* ── Mastery Breakdown ── */}
+        <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+          <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: '0 0 16px' }}>Mastery Breakdown</p>
+          <Bar label="New"      count={stats.unseen}   total={stats.total} shade="#EAEAE8" />
+          <Bar label="Learning" count={stats.learning}  total={stats.total} shade="#AAAAAA" />
+          <Bar label="Familiar" count={stats.familiar}  total={stats.total} shade="#666666" />
+          <Bar label="Mastered" count={stats.mastered}  total={stats.total} shade="#222222" />
+          <p style={{ fontSize: 10, color: '#ADADAD', marginTop: 8, lineHeight: 1.6 }}>
+            <strong>New</strong> = never reviewed ·{' '}
+            <strong>Learning</strong> = 1–2 correct ·{' '}
+            <strong>Familiar</strong> = 3–4 correct ·{' '}
+            <strong>Mastered</strong> = score ≥ 5, recalled ≥ 3 times correctly
+          </p>
         </div>
 
         {/* ── Reset ── */}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowReset(true)}
-          className="w-full py-4 rounded-2xl font-semibold pressable"
-          style={{ background: '#EAEAE8', color: '#777777', border: 'none', cursor: 'pointer', borderRadius: '1.25rem' }}
-          id="dash-reset-btn">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowReset(true)}
+          style={{
+            width: '100%', padding: '14px', borderRadius: '1.25rem',
+            fontWeight: 600, fontSize: 14, border: 'none', cursor: 'pointer',
+            background: '#EAEAE8', color: '#7A7A7A',
+          }}
+          id="dash-reset-btn"
+        >
           Reset All Progress
         </motion.button>
       </div>

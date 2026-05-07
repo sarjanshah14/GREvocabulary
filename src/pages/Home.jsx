@@ -1,185 +1,196 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Zap } from 'lucide-react';
+import { BookOpen, Layers, Grid3x3, HelpCircle, BarChart2 } from 'lucide-react';
 import data from '../../data.json';
-import { getStreak, getSessions, getOverallStats } from '../utils/storage';
+import { getAllStats, getDailyGoal } from '../utils/engine';
 
 const { wordlists } = data;
-const totalWords = wordlists.length;
-const hfWords = wordlists.filter((w) => w.isHighFrequency);
 
 export default function Home() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('all');
+  const [mode, setMode] = useState('all');
 
-  const streak = getStreak();
-  const sessions = getSessions();
-  const overall = getOverallStats(wordlists);
+  const stats = getAllStats(wordlists);
+  const daily = getDailyGoal();
+  const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
+  const goalDone = daily.count >= daily.goal;
 
-  const goFlashcards = (mode) => {
-    if (mode === 'hf')        navigate('/flashcards?mode=high_frequency');
-    else if (mode === 'bookmarks') navigate('/flashcards?mode=bookmarks');
-    else if (mode === 'due')  navigate('/flashcards?mode=due');
-    else                      navigate('/flashcards?mode=all');
+  const goFlash = () => {
+    const map = {
+      all: '/flashcards?mode=all',
+      hf: '/flashcards?mode=high_frequency',
+      bookmarks: '/flashcards?mode=bookmarks',
+      due: '/flashcards?mode=due',
+    };
+    navigate(map[mode] || '/flashcards?mode=all');
   };
 
   return (
-    <div className="page-in min-h-screen" style={{ background: '#F2F2F0' }}>
+    <div className="page-in" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
 
-      {/* ── Top bar ── */}
-      <div className="px-5 pt-14 pb-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-black italic" style={{ letterSpacing: '-0.03em', color: '#111111' }}>
-            GRE Lexicon
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: '#ADADAD' }}>Master every word</p>
-        </div>
-        {/* Mastery ring */}
-        <div className="relative" style={{ width: 56, height: 56 }}>
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="14" fill="none" stroke="#E4E4E2" strokeWidth="3.5"/>
-            <circle cx="18" cy="18" r="14" fill="none" stroke="#222222" strokeWidth="3.5"
-              strokeDasharray={`${(overall.pct / 100) * 87.96} 87.96`} strokeLinecap="round"/>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[11px] font-black leading-none" style={{ color: '#111111' }}>{overall.pct}%</span>
-            <span className="text-[9px]" style={{ color: '#ADADAD' }}>done</span>
+      {/* ── Header ── */}
+      <div className="px-5 pt-safe-top pt-12 pb-4">
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
+          GRE Lexicon
+        </h1>
+        <p style={{ color: '#ADADAD', fontSize: 13, marginTop: 2 }}>Daily vocabulary mastery</p>
+      </div>
+
+      {/* ── 3 Stat Cards ── */}
+      <div className="px-5 flex flex-col gap-3 mb-5">
+
+        {/* Card 1: Daily Goal */}
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          className="card p-5"
+          style={{ cursor: 'default' }}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="section-label mb-1">Daily Goal</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: '#111', lineHeight: 1 }}>
+                {daily.count}
+                <span style={{ fontSize: 18, fontWeight: 600, color: '#ADADAD' }}>
+                  {' '}/ {daily.goal}
+                </span>
+              </p>
+              <p style={{ fontSize: 12, color: '#ADADAD', marginTop: 4 }}>
+                {goalDone ? '✓ Goal complete today!' : `${daily.goal - daily.count} words remaining`}
+              </p>
+            </div>
+            {/* Mini ring */}
+            <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+              <svg style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }} viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#EAEAE8" strokeWidth="3.5" />
+                <circle cx="18" cy="18" r="14" fill="none"
+                  stroke={goalDone ? '#333' : '#555'}
+                  strokeWidth="3.5"
+                  strokeDasharray={`${(goalPct / 100) * 87.96} 87.96`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 11, fontWeight: 900, color: '#111' }}>{goalPct}%</span>
+              </div>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: 6, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${goalPct}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              style={{ height: '100%', background: goalDone ? '#222' : '#555', borderRadius: 999 }}
+            />
+          </div>
+        </motion.div>
+
+        {/* Card 2: Streak */}
+        <div className="flex gap-3">
+          <div className="card p-4 flex-1">
+            <p className="section-label mb-2">Streak</p>
+            <p style={{ fontSize: 36, fontWeight: 900, color: '#111', lineHeight: 1 }}>
+              {stats.streak.current > 0 ? `🔥 ${stats.streak.current}` : '—'}
+            </p>
+            <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 4 }}>
+              {stats.streak.current > 0 ? 'day streak' : 'Start today!'}
+            </p>
+          </div>
+
+          {/* Card 3: Mastered */}
+          <div className="card p-4 flex-1">
+            <p className="section-label mb-2">Mastered</p>
+            <p style={{ fontSize: 36, fontWeight: 900, color: '#111', lineHeight: 1 }}>
+              {stats.mastered}
+            </p>
+            <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 4 }}>
+              of {stats.total} words
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ── Stat row ── */}
-      <div className="flex gap-3 px-5 mt-1">
-        <div className="flex-1 stat-card">
-          <BookOpen size={16} color="#ADADAD" />
-          <p className="text-2xl font-black" style={{ color: '#111111' }}>{overall.studied}</p>
-          <p className="text-xs" style={{ color: '#ADADAD' }}>Studied</p>
-        </div>
-        <div className="flex-1 stat-card">
-          <p className="text-2xl font-black" style={{ color: '#111111' }}>{overall.mastered}</p>
-          <p className="text-xs" style={{ color: '#ADADAD' }}>Mastered</p>
-        </div>
-        <div className="flex-1 stat-card">
-          <Zap size={16} color="#ADADAD" />
-          <p className="text-2xl font-black" style={{ color: '#111111' }}>
-            {streak.currentStreak > 0 ? `🔥${streak.currentStreak}` : sessions}
-          </p>
-          <p className="text-xs" style={{ color: '#ADADAD' }}>
-            {streak.currentStreak > 0 ? 'Streak' : 'Sessions'}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Total word count pill ── */}
-      <div className="px-5 mt-4">
-        <div className="rounded-2xl px-5 py-3.5 flex items-center justify-between"
-          style={{ background: '#FFFFFF', border: '1px solid #E8E8E6' }}>
-          <div>
-            <p className="font-bold text-sm" style={{ color: '#111111' }}>Total Vocabulary</p>
-            <p className="text-xs mt-0.5" style={{ color: '#ADADAD' }}>All words in one pool</p>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-black" style={{ color: '#111111' }}>{totalWords}</p>
-            <p className="text-xs" style={{ color: '#ADADAD' }}>words</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Mode tabs ── */}
-      <div className="px-5 mt-4">
-        <div className="flex p-1 rounded-full" style={{ background: '#E8E8E6' }}>
+      {/* ── Mode Selector ── */}
+      <div className="px-5 mb-4">
+        <div style={{ display: 'flex', gap: 8, padding: 4, background: '#E8E8E6', borderRadius: 999 }}>
           {[
-            { id: 'all',       label: 'All Words' },
-            { id: 'hf',        label: `★ HF (${hfWords.length})` },
+            { id: 'all',       label: 'All' },
+            { id: 'hf',        label: '★ HF' },
             { id: 'bookmarks', label: '🔖 Saved' },
             { id: 'due',       label: '🔄 Due' },
           ].map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`pill-tab ${tab === t.id ? 'active' : 'inactive'}`}
+              onClick={() => setMode(t.id)}
+              className="pill-tab"
+              style={{
+                flex: 1,
+                padding: '8px 4px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                background: mode === t.id ? '#222' : 'transparent',
+                color: mode === t.id ? '#fff' : '#9A9A9A',
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+              }}
               id={`home-tab-${t.id}`}
             >
               {t.label}
             </button>
           ))}
         </div>
+        <p style={{ fontSize: 11, color: '#ADADAD', textAlign: 'center', marginTop: 6 }}>
+          {mode === 'all' && `${stats.total} words · high-frequency appear 3× more`}
+          {mode === 'hf' && `${stats.hfTotal} priority words · ${stats.hfMastered} mastered`}
+          {mode === 'bookmarks' && 'Only your bookmarked words'}
+          {mode === 'due' && 'Words your review schedule wants today'}
+        </p>
       </div>
 
       {/* ── Start CTA ── */}
-      <div className="px-5 mt-4">
+      <div className="px-5 mb-5">
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={() => goFlashcards(tab)}
-          className="w-full py-4 rounded-2xl font-bold text-white text-base pressable btn-primary flex items-center justify-center gap-2"
-          style={{ borderRadius: '1.25rem' }}
+          onClick={goFlash}
+          className="btn-primary w-full pressable"
+          style={{ padding: '16px', borderRadius: '1.25rem', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}
           id="home-start-session"
         >
           Start Flashcard Session →
         </motion.button>
       </div>
 
-      {/* ── Mode descriptions ── */}
-      <div className="px-5 mt-3">
-        <p className="text-xs text-center" style={{ color: '#ADADAD' }}>
-          {tab === 'all'       && `Practice all ${totalWords} words. High frequency words appear more often.`}
-          {tab === 'hf'        && `Only the ${hfWords.length} high-priority GRE words. Best for focused review.`}
-          {tab === 'bookmarks' && 'Only words you\'ve bookmarked during study sessions.'}
-          {tab === 'due'       && 'Words your spaced repetition schedule says to review today.'}
+      {/* ── Quick Actions ── */}
+      <div className="px-5 mb-6">
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#ADADAD', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+          Practice Modes
         </p>
-      </div>
-
-      {/* ── Quick actions ── */}
-      <div className="px-5 mt-5 grid grid-cols-2 gap-3">
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => navigate('/library')}
-          className="card p-4 text-left pressable" style={{ border: 'none', cursor: 'pointer' }}
-          id="home-library">
-          <div className="text-xl mb-2">📖</div>
-          <p className="font-bold text-sm" style={{ color: '#111111' }}>Browse Words</p>
-          <p className="text-xs mt-0.5" style={{ color: '#ADADAD' }}>{totalWords} words</p>
-        </motion.button>
-
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => navigate('/groups/practice')}
-          className="card p-4 text-left pressable" style={{ border: 'none', cursor: 'pointer' }}
-          id="home-group-practice">
-          <div className="text-xl mb-2">🎯</div>
-          <p className="font-bold text-sm" style={{ color: '#111111' }}>Word Groups</p>
-          <p className="text-xs mt-0.5" style={{ color: '#ADADAD' }}>Match the theme</p>
-        </motion.button>
-
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => navigate('/confusing')}
-          className="card p-4 text-left pressable" style={{ border: 'none', cursor: 'pointer' }}
-          id="home-confusing">
-          <div className="text-xl mb-2">🤔</div>
-          <p className="font-bold text-sm" style={{ color: '#111111' }}>Confusing Words</p>
-          <p className="text-xs mt-0.5" style={{ color: '#ADADAD' }}>106 tricky pairs</p>
-        </motion.button>
-
-        <motion.button whileTap={{ scale: 0.96 }} onClick={() => navigate('/dashboard')}
-          className="card p-4 text-left pressable" style={{ border: 'none', cursor: 'pointer' }}
-          id="home-progress">
-          <div className="text-xl mb-2">📊</div>
-          <p className="font-bold text-sm" style={{ color: '#111111' }}>My Progress</p>
-          <p className="text-xs mt-0.5" style={{ color: '#ADADAD' }}>{overall.pct}% mastered</p>
-        </motion.button>
-      </div>
-
-      {/* ── HF progress card ── */}
-      <div className="px-5 mt-5 mb-6">
-        <div className="card p-4">
-          <div className="flex justify-between items-center mb-2">
-            <p className="font-bold text-sm" style={{ color: '#111111' }}>★ High Frequency Progress</p>
-            <span className="text-xs font-bold" style={{ color: '#7A7A7A' }}>
-              {overall.mastered} / {totalWords}
-            </span>
-          </div>
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${overall.pct}%` }} />
-          </div>
-          <p className="text-xs mt-2" style={{ color: '#ADADAD' }}>
-            Keep going — HF words repeat more often to help you retain them.
-          </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            { icon: BookOpen, label: 'Browse Words', sub: `${stats.total} words`, path: '/library' },
+            { icon: Grid3x3,  label: 'Word Groups',  sub: 'Match the theme',      path: '/groups/practice' },
+            { icon: HelpCircle,label: 'Confusing Pairs', sub: '106 tricky pairs', path: '/confusing' },
+            { icon: BarChart2, label: 'My Progress',  sub: `${stats.pct}% mastered`, path: '/dashboard' },
+          ].map(({ icon: Icon, label, sub, path }) => (
+            <motion.button
+              key={path}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate(path)}
+              className="card p-4 text-left pressable"
+              style={{ border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}
+              id={`home-${path.replace('/', '').replace('/', '-')}`}
+            >
+              <Icon size={18} color="#888" strokeWidth={1.8} />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>{label}</p>
+                <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 2 }}>{sub}</p>
+              </div>
+            </motion.button>
+          ))}
         </div>
       </div>
 

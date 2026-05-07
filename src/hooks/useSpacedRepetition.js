@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
-import { getSessionPool, filterWords } from '../utils/algorithm';
-import { updateWordProgress } from '../utils/storage';
+import { getSessionPool, filterWords, updateWordState } from '../utils/engine';
 
-export function useSpacedRepetition(allWords, mode = 'all', extra = null) {
-  const filtered = filterWords(allWords, mode, extra);
+export function useSpacedRepetition(allWords, mode = 'all') {
+  const filtered = filterWords(allWords, mode);
+
   const [pool] = useState(() => {
     if (mode === 'all' || mode === 'due') return getSessionPool(filtered, 50);
-    return filtered.length > 50 ? getSessionPool(filtered, 50) : filtered;
+    if (filtered.length > 50) return getSessionPool(filtered, 50);
+    return filtered;
   });
 
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(null); // 'left' | 'right'
   const [isAnimating, setIsAnimating] = useState(false);
 
   const current = pool[index] || null;
@@ -19,15 +19,10 @@ export function useSpacedRepetition(allWords, mode = 'all', extra = null) {
   const swipe = useCallback(
     (dir) => {
       if (isAnimating || !current) return;
-      setDirection(dir);
       setIsAnimating(true);
-
-      // Update localStorage immediately
-      updateWordProgress(current.word, dir);
-
+      updateWordState(current.word, dir === 'right');
       setTimeout(() => {
         setIndex((i) => i + 1);
-        setDirection(null);
         setIsAnimating(false);
       }, 350);
     },
@@ -39,9 +34,8 @@ export function useSpacedRepetition(allWords, mode = 'all', extra = null) {
     current,
     index,
     total,
-    direction,
-    isAnimating,
     swipe,
+    isAnimating,
     isDone: index >= pool.length,
   };
 }

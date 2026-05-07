@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { saveGameScore } from '../utils/storage';
+import { saveGameScore } from '../utils/engine';
 import { CheckCircle2, XCircle, CircleDashed } from 'lucide-react';
 
 export default function MatchingGame({ group, allWords, onNext }) {
@@ -8,20 +8,25 @@ export default function MatchingGame({ group, allWords, onNext }) {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
 
-  // The correct answer set for this theme
-  const correctSet = new Set(group.words);
-  const correctCount = group.words.length;
-
-  // Build chip pool: all correct words + 5 random decoys from other groups
-  const [chips] = useState(() => {
-    const correct = group.words.filter((w) => allWords.some((a) => a.word === w));
-    const others = allWords
-      .filter((w) => !correctSet.has(w.word))
+  // Build the chip pool for THIS round:
+  // correct = group words that exist in the allWords dataset
+  // decoys  = 5 random words NOT in the group
+  const [chips, correctInRound] = useState(() => {
+    const correct = group.words.filter((w) =>
+      allWords.some((a) => a.word.toLowerCase() === w.toLowerCase())
+    );
+    const decoys = allWords
+      .filter((w) => !group.words.some((gw) => gw.toLowerCase() === w.word.toLowerCase()))
       .sort(() => Math.random() - 0.5)
       .slice(0, 5)
       .map((w) => w.word);
-    return [...correct, ...others].sort(() => Math.random() - 0.5);
+    const pool = [...correct, ...decoys].sort(() => Math.random() - 0.5);
+    return [pool, correct]; // [chips, correctInRound]
   });
+
+  // correctInRound is what the user CAN possibly select — this is what accuracy is measured against
+  const correctSet = new Set(correctInRound.map((w) => w.toLowerCase()));
+  const correctCount = correctInRound.length;
 
   const toggle = (w) => {
     if (submitted) return;
@@ -33,136 +38,165 @@ export default function MatchingGame({ group, allWords, onNext }) {
   };
 
   const submit = () => {
-    const tp = [...selected].filter((w) => correctSet.has(w)).length;  // correct picks
-    const fp = [...selected].filter((w) => !correctSet.has(w)).length; // wrong picks
-    const fn = [...correctSet].filter((w) => !selected.has(w)).length; // missed
-    const accuracy = correctCount > 0 ? Math.round((tp / (tp + fp + fn)) * 100) : 0;
+    // ── CORRECT SCORING ──────────────────────────────────────────────
+    // Only score against words visible in THIS round (correctInRound).
+    // NEVER penalize for synonyms in the full dataset that were not shown.
+    const tp = [...selected].filter((w) => correctSet.has(w.toLowerCase())).length;
+    const fp = [...selected].filter((w) => !correctSet.has(w.toLowerCase())).length;
+    const fn = correctInRound.filter((w) => !selected.has(w)).length;
+
+    // accuracy = correct picks / total correct available in this round
+    const accuracy = correctCount > 0 ? Math.round((tp / correctCount) * 100) : 0;
+    // ─────────────────────────────────────────────────────────────────
+
     setResult({ tp, fp, fn, accuracy });
     setSubmitted(true);
     saveGameScore(group.phrase, accuracy);
   };
 
-  // Chip visual state
-  const getChipClass = (w) => {
+  const getChipStyle = (w) => {
+    const base = {
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '10px 16px', borderRadius: 999,
+      fontSize: 13, fontWeight: 600,
+      cursor: submitted ? 'default' : 'pointer',
+      transition: 'all 0.15s',
+      border: '1.5px solid transparent',
+    };
     if (!submitted) {
-      return selected.has(w) ? 'game-chip-selected' : 'game-chip-idle';
+      return selected.has(w)
+        ? { ...base, background: '#222', color: '#fff', border: '1.5px solid #222' }
+        : { ...base, background: '#fff', color: '#333', border: '1.5px solid #E4E4E2', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' };
     }
-    if (correctSet.has(w) && selected.has(w)) return 'game-chip-correct';   // ✓ correct pick
-    if (!correctSet.has(w) && selected.has(w)) return 'game-chip-wrong';    // ✗ wrong pick
-    if (correctSet.has(w) && !selected.has(w)) return 'game-chip-missed';   // ◌ missed correct
-    return 'game-chip-idle opacity-30';                                       // irrelevant decoy
+    const isCorrect = correctSet.has(w.toLowerCase());
+    const isSelected = selected.has(w);
+    if (isCorrect && isSelected)  return { ...base, background: '#EAEAE8', color: '#111', border: '2px solid #333' };
+    if (!isCorrect && isSelected) return { ...base, background: '#F5F5F3', color: '#999', border: '1.5px solid #DDD', textDecoration: 'line-through' };
+    if (isCorrect && !isSelected) return { ...base, background: '#fff', color: '#333', border: '2px dashed #888' };
+    return { ...base, background: '#FAFAFA', color: '#CCC', border: '1px solid #EEE', opacity: 0.4 };
   };
 
-  const getChipIcon = (w) => {
+  const chipIcon = (w) => {
     if (!submitted) return null;
-    if (correctSet.has(w) && selected.has(w)) return <CheckCircle2 size={14} color="#333" />;
-    if (!correctSet.has(w) && selected.has(w)) return <XCircle size={14} color="#999" />;
-    if (correctSet.has(w) && !selected.has(w)) return <CircleDashed size={14} color="#888" />;
+    const isCorrect = correctSet.has(w.toLowerCase());
+    const isSelected = selected.has(w);
+    if (isCorrect && isSelected)  return <CheckCircle2 size={13} color="#444" />;
+    if (!isCorrect && isSelected) return <XCircle size={13} color="#BBB" />;
+    if (isCorrect && !isSelected) return <CircleDashed size={13} color="#888" />;
     return null;
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Theme card ── */}
-      <div className="rounded-2xl p-5" style={{ background: '#FFFFFF', border: '1px solid #E4E4E2' }}>
-        <p className="section-label mb-2">Theme / Meaning</p>
-        <h2 className="text-2xl font-black text-[#111111] leading-tight">{group.phrase}</h2>
+      {/* Theme */}
+      <div className="card p-5">
+        <p className="section-label" style={{ marginBottom: 6 }}>Theme / Shared Meaning</p>
+        <h2 style={{ fontSize: 22, fontWeight: 900, color: '#111', lineHeight: 1.2, margin: 0 }}>
+          {group.phrase}
+        </h2>
       </div>
 
-      {/* ── Instruction with count ── */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium" style={{ color: '#7A7A7A' }}>
-          Select the <span className="font-bold text-[#111111]">{correctCount} words</span> that share this meaning
+      {/* Instruction */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ fontSize: 13, color: '#7A7A7A', margin: 0 }}>
+          Select the <strong style={{ color: '#111' }}>{correctCount} words</strong> that share this meaning
         </p>
         {!submitted && (
-          <span
-            className="text-xs font-bold px-3 py-1 rounded-full"
-            style={{
-              background: selected.size === correctCount ? '#222222' : '#EAEAE8',
-              color: selected.size === correctCount ? '#FFFFFF' : '#7A7A7A',
-              transition: 'all 0.2s',
-            }}
-          >
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999,
+            background: selected.size === correctCount ? '#222' : '#EAEAE8',
+            color: selected.size === correctCount ? '#fff' : '#9A9A9A',
+            transition: 'all 0.2s',
+          }}>
             {selected.size} / {correctCount}
           </span>
         )}
       </div>
 
-      {/* ── Chip pool ── */}
-      <div className="flex flex-wrap gap-2.5">
+      {/* Chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {chips.map((w, i) => (
           <motion.button
             key={w + i}
-            whileTap={!submitted ? { scale: 0.92 } : {}}
+            whileTap={!submitted ? { scale: 0.9 } : {}}
             onClick={() => toggle(w)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold pressable transition-all duration-150 ${getChipClass(w)}`}
-            style={{ cursor: submitted ? 'default' : 'pointer' }}
+            style={getChipStyle(w)}
             id={`chip-${w}`}
           >
-            {getChipIcon(w)}
+            {chipIcon(w)}
             {w}
           </motion.button>
         ))}
       </div>
 
-      {/* ── Result breakdown ── */}
+      {/* Results */}
       <AnimatePresence>
         {submitted && result && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl p-4"
-            style={{ background: '#FFFFFF', border: '1px solid #E4E4E2' }}
+            className="card p-4"
           >
             {/* Score */}
-            <div className="flex items-center gap-3 mb-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
               <div>
-                <p className="text-4xl font-black text-[#111111]">{result.accuracy}%</p>
-                <p className="text-xs font-medium mt-0.5" style={{ color: '#7A7A7A' }}>accuracy</p>
+                <p style={{ fontSize: 44, fontWeight: 900, color: '#111', lineHeight: 1, margin: 0 }}>
+                  {result.accuracy}%
+                </p>
+                <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 2 }}>
+                  {result.tp} of {correctCount} correct words picked
+                </p>
               </div>
-              <div className="flex-1 flex flex-col gap-1.5 ml-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 size={15} color="#333" />
-                  <span style={{ color: '#333' }}><b>{result.tp}</b> correct picked</span>
-                </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {result.tp > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#444' }}>
+                    <CheckCircle2 size={13} /> {result.tp} correct
+                  </div>
+                )}
                 {result.fp > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <XCircle size={15} color="#888" />
-                    <span style={{ color: '#888' }}><b>{result.fp}</b> wrong picked</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#999' }}>
+                    <XCircle size={13} /> {result.fp} wrong pick{result.fp > 1 ? 's' : ''}
                   </div>
                 )}
                 {result.fn > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CircleDashed size={15} color="#888" />
-                    <span style={{ color: '#888' }}><b>{result.fn}</b> missed (dashed border)</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#888' }}>
+                    <CircleDashed size={13} /> {result.fn} missed (shown dashed)
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Correct answer reveal */}
+            {/* All correct words */}
             <div>
-              <p className="section-label mb-2">All {correctCount} correct words</p>
-              <div className="flex flex-wrap gap-1.5">
-                {group.words.map((w, i) => (
-                  <span key={i} className="px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: '#EAEAE8', color: '#222222' }}>
+              <p className="section-label" style={{ marginBottom: 8 }}>
+                All {correctCount} correct words in this round
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {correctInRound.map((w, i) => (
+                  <span key={i} style={{
+                    padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+                    background: '#EAEAE8', color: '#222',
+                  }}>
                     {w}
                   </span>
                 ))}
               </div>
+              <p style={{ fontSize: 10, color: '#ADADAD', marginTop: 8 }}>
+                Note: accuracy is scored only on the {correctCount} words shown in this round.
+              </p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Action button ── */}
+      {/* Action */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={submitted ? onNext : submit}
         disabled={!submitted && selected.size === 0}
-        className="w-full py-4 rounded-2xl font-bold text-base pressable btn-primary"
+        className="btn-primary pressable w-full"
+        style={{ padding: '16px', borderRadius: '1.25rem', fontSize: 15, fontWeight: 700, opacity: (!submitted && selected.size === 0) ? 0.35 : 1 }}
         id="game-action-btn"
       >
         {submitted ? 'Next Group →' : `Submit${selected.size > 0 ? ` (${selected.size} selected)` : ''}`}

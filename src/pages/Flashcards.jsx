@@ -7,15 +7,17 @@ import FlashCard from '../components/FlashCard';
 import SwipeButtons from '../components/SwipeButtons';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 import {
-  toggleFavourite, toggleBookmark,
-  getFavourites, getBookmarks,
+  toggleBookmark, toggleFavourite,
+  getBookmarks, getFavourites,
   incrementSessions, updateStreak,
-} from '../utils/storage';
+  filterWords,
+} from '../utils/engine';
 
 const { wordlists } = data;
 
-/* ─── Mode picker sheet ─────── */
+/* ─── Mode picker sheet ─── */
 function ModeSheet({ onSelect, onClose, canClose }) {
+  const hfCount = wordlists.filter((w) => w.isHighFrequency).length;
   return (
     <AnimatePresence>
       <motion.div
@@ -29,13 +31,17 @@ function ModeSheet({ onSelect, onClose, canClose }) {
           transition={{ type: 'spring', stiffness: 380, damping: 38 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#E4E4E2' }} />
-          <h2 className="text-xl font-black mb-1" style={{ color: '#111111' }}>Choose Session Mode</h2>
-          <p className="text-sm mb-5" style={{ color: '#ADADAD' }}>All modes draw from the full word pool</p>
+          <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', margin: '0 auto 20px' }} />
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
+            Choose Session Mode
+          </h2>
+          <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 20px' }}>
+            All modes draw from the complete word pool
+          </p>
 
           {[
-            { id: 'all',            label: '📚 All Words',          desc: `${wordlists.length} words · HF words appear 3× more often` },
-            { id: 'high_frequency', label: '★ High Frequency only',  desc: `${wordlists.filter(w => w.isHighFrequency).length} high-priority GRE words` },
+            { id: 'all',            label: '📚 All Words',           desc: `${wordlists.length} words · HF words appear 3× more` },
+            { id: 'high_frequency', label: '★ High Frequency only',  desc: `${hfCount} essential GRE words` },
             { id: 'bookmarks',      label: '🔖 Bookmarked',           desc: 'Only words you saved' },
             { id: 'due',            label: '🔄 Due for Review',       desc: 'Spaced repetition queue' },
           ].map((m) => (
@@ -43,22 +49,29 @@ function ModeSheet({ onSelect, onClose, canClose }) {
               key={m.id}
               whileTap={{ scale: 0.97 }}
               onClick={() => onSelect(m.id)}
-              className="w-full flex items-center justify-between p-4 rounded-2xl mb-2 pressable text-left"
-              style={{ background: '#F4F4F2', border: 'none', cursor: 'pointer' }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px', borderRadius: 16, marginBottom: 8,
+                background: '#F4F4F2', border: 'none', cursor: 'pointer', textAlign: 'left',
+              }}
               id={`mode-${m.id}`}
             >
               <div>
-                <p className="font-semibold" style={{ color: '#111111' }}>{m.label}</p>
-                <p className="text-sm mt-0.5" style={{ color: '#ADADAD' }}>{m.desc}</p>
+                <p style={{ fontWeight: 600, color: '#111', margin: 0 }}>{m.label}</p>
+                <p style={{ fontSize: 12, color: '#ADADAD', margin: '2px 0 0' }}>{m.desc}</p>
               </div>
-              <span style={{ color: '#CCCCCC', fontSize: 20 }}>›</span>
+              <span style={{ color: '#CCC', fontSize: 20, lineHeight: 1 }}>›</span>
             </motion.button>
           ))}
 
           {canClose && (
-            <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-              className="mt-2 w-full py-3 rounded-2xl font-semibold pressable btn-secondary"
-              style={{ borderRadius: '1.25rem' }} id="mode-cancel">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onClose}
+              className="btn-secondary pressable w-full"
+              style={{ marginTop: 8, padding: '12px', borderRadius: '1.25rem', fontSize: 14 }}
+              id="mode-cancel"
+            >
               Cancel
             </motion.button>
           )}
@@ -68,153 +81,202 @@ function ModeSheet({ onSelect, onClose, canClose }) {
   );
 }
 
-/* ─── Session complete ─────── */
-function SessionDone({ total, onRestart, onHome }) {
+/* ─── Session complete ─── */
+function SessionDone({ total, mode, onRestart, onHome }) {
   useState(() => { incrementSessions(); updateStreak(); });
+
+  const modeLabel = {
+    all: 'All Words',
+    high_frequency: '★ High Frequency',
+    bookmarks: 'Bookmarked',
+    due: 'Due for Review',
+  }[mode] || 'All Words';
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center"
-      style={{ background: '#F2F2F0' }}>
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="text-6xl mb-6">🎉</motion.div>
-      <h2 className="text-3xl font-black mb-2" style={{ color: '#111111' }}>Session Complete!</h2>
-      <p className="text-sm mb-2" style={{ color: '#ADADAD' }}>You reviewed</p>
-      <p className="text-7xl font-black mb-1" style={{ color: '#111111' }}>{total}</p>
-      <p className="text-sm mb-10" style={{ color: '#ADADAD' }}>words this session</p>
-      <motion.button whileTap={{ scale: 0.97 }} onClick={onRestart}
-        className="w-full py-4 rounded-2xl font-bold text-white text-lg mb-3 pressable btn-primary"
-        style={{ borderRadius: '1.25rem' }} id="fc-restart">
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', minHeight: '100dvh', padding: '0 24px',
+      textAlign: 'center', background: '#F2F2F0',
+    }}>
+      <motion.div
+        initial={{ scale: 0 }} animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+        style={{ fontSize: 64, marginBottom: 20 }}
+      >
+        🎉
+      </motion.div>
+      <h2 style={{ fontSize: 32, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
+        Session Complete!
+      </h2>
+      <p style={{ fontSize: 14, color: '#ADADAD', margin: '0 0 6px' }}>Mode: {modeLabel}</p>
+      <p style={{ fontSize: 80, fontWeight: 900, color: '#111', lineHeight: 1, margin: '0 0 4px' }}>
+        {total}
+      </p>
+      <p style={{ fontSize: 14, color: '#ADADAD', margin: '0 0 36px' }}>
+        words reviewed this session
+      </p>
+
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={onRestart}
+        className="btn-primary pressable w-full"
+        style={{ marginBottom: 12, padding: '16px', borderRadius: '1.25rem', fontSize: 16, fontWeight: 700 }}
+        id="fc-restart"
+      >
         Practice Again
       </motion.button>
-      <motion.button whileTap={{ scale: 0.97 }} onClick={onHome}
-        className="w-full py-3.5 rounded-2xl font-semibold pressable btn-secondary"
-        style={{ borderRadius: '1.25rem' }} id="fc-home">
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={onHome}
+        className="btn-secondary pressable w-full"
+        style={{ padding: '14px', borderRadius: '1.25rem', fontSize: 14, fontWeight: 600 }}
+        id="fc-home"
+      >
         Go Home
       </motion.button>
     </div>
   );
 }
 
-/* ─── Main page ─────── */
+/* ─── Main page ─── */
 export default function Flashcards() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlMode = searchParams.get('mode');
-  const urlNum = searchParams.get('num') ? parseInt(searchParams.get('num')) : null;
 
   const [showSheet, setShowSheet] = useState(!urlMode);
   const [mode, setMode] = useState(urlMode || 'all');
-  const [extra, setExtra] = useState(urlNum);
   const [sessionKey, setSessionKey] = useState(0);
-  const [favourites, setFavourites] = useState(() => getFavourites());
   const [bookmarks, setBookmarks] = useState(() => getBookmarks());
+  const [favourites, setFavourites] = useState(() => getFavourites());
 
-  const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode, null);
+  const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode);
 
-  const handleSelect = (m) => {
-    setMode(m);
-    setShowSheet(false);
-  };
-
-  const handleFav = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
+  const handleSelect = (m) => { setMode(m); setShowSheet(false); };
+  const handleFav  = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
   const handleBook = () => { if (current) setBookmarks([...toggleBookmark(current.word)]); };
   const handleRestart = () => { setShowSheet(true); setSessionKey((k) => k + 1); };
 
-  const modeName = () => {
-    if (mode === 'high_frequency') return '★ High Frequency';
-    if (mode === 'bookmarks') return 'Bookmarks';
-    if (mode === 'due') return 'Due for Review';
-    return 'All Words';
+  // Label for the current deck size
+  const deckLabel = () => {
+    if (mode === 'high_frequency') {
+      const hf = filterWords(wordlists, 'high_frequency');
+      return `${hf.length} high-frequency words`;
+    }
+    if (mode === 'bookmarks') {
+      const bm = filterWords(wordlists, 'bookmarks');
+      return `${bm.length} bookmarked word${bm.length !== 1 ? 's' : ''}`;
+    }
+    return `${wordlists.length} words`;
+  };
+
+  const modeNames = {
+    all: 'All Words',
+    high_frequency: '★ High Frequency',
+    bookmarks: 'Bookmarks',
+    due: 'Due for Review',
   };
 
   const isFav  = current ? favourites.includes(current.word) : false;
   const isBook = current ? bookmarks.includes(current.word) : false;
 
   if (isDone && !showSheet) {
-    return <SessionDone total={total} onRestart={handleRestart} onHome={() => navigate('/')} />;
+    return <SessionDone total={total} mode={mode} onRestart={handleRestart} onHome={() => navigate('/')} />;
   }
 
+  const pct = total > 0 ? (index / total) * 100 : 0;
+
   return (
-    <div key={sessionKey} className="page-in flex flex-col min-h-screen" style={{ background: '#F2F2F0' }}>
+    <div key={sessionKey} className="page-in" style={{
+      display: 'flex', flexDirection: 'column',
+      minHeight: '100dvh', background: '#F2F2F0',
+    }}>
       {showSheet && (
         <ModeSheet onSelect={handleSelect} onClose={() => setShowSheet(false)} canClose={!!urlMode} />
       )}
 
-      {/* ── Header row ── */}
-      <div className="flex items-center justify-between px-5 pt-14 pb-3">
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 8px' }}>
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/')}
-          className="w-10 h-10 rounded-full flex items-center justify-center pressable"
-          style={{ background: '#FFFFFF', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
           id="fc-back">
-          <ArrowLeft size={18} color="#777777" strokeWidth={2} />
+          <ArrowLeft size={18} color="#777" strokeWidth={2} />
         </motion.button>
 
-        <div className="text-center">
-          <p className="font-bold text-sm" style={{ color: '#111111' }}>{modeName()}</p>
-          <p className="text-xs" style={{ color: '#ADADAD' }}>{index} of {total}</p>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>{modeNames[mode] || 'All Words'}</p>
+          <p style={{ fontSize: 12, color: '#ADADAD', margin: '2px 0 0' }}>
+            {index} of {total} words reviewed
+          </p>
         </div>
 
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowSheet(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center pressable"
-          style={{ background: '#FFFFFF', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}
+          style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
           id="fc-mode-btn">
-          <SlidersHorizontal size={16} color="#777777" strokeWidth={2} />
+          <SlidersHorizontal size={16} color="#777" strokeWidth={2} />
         </motion.button>
       </div>
 
       {/* ── Progress bar ── */}
-      <div className="px-5 mb-4">
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${total > 0 ? (index / total) * 100 : 0}%` }} />
+      <div style={{ padding: '0 20px 12px' }}>
+        <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
+          <motion.div
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.3 }}
+            style={{ height: '100%', background: '#333', borderRadius: 999 }}
+          />
         </div>
+        <p style={{ fontSize: 10, color: '#ADADAD', marginTop: 4 }}>{deckLabel()}</p>
       </div>
 
-      {/* ── Fav / Bookmark row (BELOW progress bar, separate from card) ── */}
-      <div className="flex justify-end px-5 mb-3 gap-2">
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={handleFav}
-          disabled={!current}
-          className="w-10 h-10 rounded-full flex items-center justify-center pressable disabled:opacity-30"
-          style={{ background: '#FFFFFF', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}
-          id="fc-fav-btn" aria-label="Favourite">
-          <Heart size={17} fill={isFav ? '#222' : 'none'} color={isFav ? '#222' : '#CCCCCC'} strokeWidth={2} />
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={handleBook}
-          disabled={!current}
-          className="w-10 h-10 rounded-full flex items-center justify-center pressable disabled:opacity-30"
-          style={{ background: '#FFFFFF', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}
-          id="fc-bookmark-btn" aria-label="Bookmark">
-          <Bookmark size={17} fill={isBook ? '#222' : 'none'} color={isBook ? '#222' : '#CCCCCC'} strokeWidth={2} />
-        </motion.button>
+      {/* ── Fav / Bookmark row ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '0 20px 8px' }}>
+        {[
+          { fn: handleFav,  Icon: Heart,     filled: isFav,  id: 'fc-fav-btn',      label: 'Favourite' },
+          { fn: handleBook, Icon: Bookmark,  filled: isBook, id: 'fc-bookmark-btn', label: 'Bookmark' },
+        ].map(({ fn, Icon, filled, id, label }) => (
+          <motion.button
+            key={id}
+            whileTap={{ scale: 0.85 }}
+            onClick={fn}
+            disabled={!current}
+            aria-label={label}
+            style={{
+              width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 1px 6px rgba(0,0,0,0.07)', cursor: 'pointer', opacity: current ? 1 : 0.3,
+            }}
+            id={id}
+          >
+            <Icon size={17} fill={filled ? '#222' : 'none'} color={filled ? '#222' : '#CCC'} strokeWidth={2} />
+          </motion.button>
+        ))}
       </div>
 
       {/* ── Card stack ── */}
-      <div className="flex-1 flex flex-col justify-center px-5">
-        <div className="relative">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px' }}>
+        <div style={{ position: 'relative' }}>
           {/* Ghost cards for depth */}
-          <div className="absolute inset-x-8 -bottom-4 rounded-3xl"
-            style={{ height: '100%', background: '#E0E0DE', zIndex: 1, borderRadius: '2rem',
-              transform: 'scale(0.88)', transformOrigin: 'bottom center' }} />
-          <div className="absolute inset-x-4 -bottom-2 rounded-3xl"
-            style={{ height: '100%', background: '#EBEBEA', zIndex: 2, borderRadius: '2rem',
-              transform: 'scale(0.94)', transformOrigin: 'bottom center' }} />
-          <div className="relative" style={{ zIndex: 3 }}>
+          {[
+            { scale: 0.88, bottom: -16, bg: '#D8D8D6', zIndex: 1 },
+            { scale: 0.94, bottom: -8,  bg: '#E8E8E6', zIndex: 2 },
+          ].map((g, i) => (
+            <div key={i} style={{
+              position: 'absolute', left: 0, right: 0, bottom: g.bottom, height: '100%',
+              borderRadius: '2rem', background: g.bg, zIndex: g.zIndex,
+              transform: `scale(${g.scale})`, transformOrigin: 'bottom center',
+            }} />
+          ))}
+          <div style={{ position: 'relative', zIndex: 3 }}>
             {current && (
-              <FlashCard
-                key={current.word + sessionKey}
-                word={current}
-                onSwipe={swipe}
-              />
+              <FlashCard key={current.word + sessionKey} word={current} onSwipe={swipe} />
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Swipe dock ── */}
-      <div className="flex justify-center pb-36 pt-10">
+      {/* ── Swipe buttons ── */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 120px' }}>
         <SwipeButtons onLeft={() => swipe('left')} onRight={() => swipe('right')} disabled={!current} />
       </div>
     </div>

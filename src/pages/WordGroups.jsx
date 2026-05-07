@@ -34,8 +34,8 @@ function WordDetail({ word, onClose }) {
             <p className="text-muted text-sm">No definition found in wordlists.</p>
           )}
           <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-            className="mt-4 w-full py-3.5 rounded-2xl font-semibold pressable"
-            style={{ background: '#FAF9F6', color: '#6B7280', border: 'none', cursor: 'pointer' }} id="word-detail-close">
+            style={{ marginTop: 16, width: '100%', padding: '14px', borderRadius: '1.25rem', fontWeight: 600, fontSize: 14, background: '#EAEAE8', color: '#555', border: 'none', cursor: 'pointer' }}
+            id="word-detail-close">
             Close
           </motion.button>
         </motion.div>
@@ -72,8 +72,8 @@ export default function WordGroups() {
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-2xl font-black text-charcoal" style={{ letterSpacing: '-0.02em' }}>Word Groups</h1>
           <motion.button whileTap={{ scale: 0.94 }} onClick={() => navigate('/groups/practice')}
-            className="px-4 py-2 rounded-xl font-semibold text-sm text-white pressable"
-            style={{ background: 'linear-gradient(135deg,#E8735A,#F4A492)', border: 'none', cursor: 'pointer', boxShadow: '0 2px 12px rgba(232,115,90,0.35)' }}
+            className="btn-primary pressable"
+            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, borderRadius: 999, border: 'none', cursor: 'pointer' }}
             id="groups-practice-btn">
             Practice →
           </motion.button>

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Eye, EyeOff, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import data from '../../data.json';
 
 const { confusingwords } = data;
@@ -25,66 +25,71 @@ export default function ConfusingWords() {
 
   if (practice && filtered.length > 0) {
     const group = filtered[practiceIdx];
+    const pct = ((practiceIdx + 1) / filtered.length) * 100;
     return (
-      <div className="page-in flex flex-col min-h-screen" style={{ background: '#FAF9F6' }}>
-        <div className="flex items-center justify-between px-5 pt-14 pb-4">
+      <div className="page-in" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: '#F2F2F0' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 16px' }}>
           <motion.button whileTap={{ scale: 0.88 }}
             onClick={() => { setPractice(false); setRevealed(new Set()); }}
-            className="px-4 py-2 rounded-xl text-sm font-semibold pressable"
-            style={{ background: '#FFFFFF', color: '#6B7280', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
-            id="cw-exit">← Exit</motion.button>
-          <span className="text-charcoal font-bold text-sm">{practiceIdx + 1} / {filtered.length}</span>
-          <div className="w-16" />
+            style={{ padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: '#fff', color: '#777', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
+            id="cw-exit">
+            ← Exit
+          </motion.button>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>
+            {practiceIdx + 1} / {filtered.length}
+          </span>
+          <div style={{ width: 60 }} />
         </div>
 
-        <div className="px-5 mb-6">
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${((practiceIdx + 1) / filtered.length) * 100}%` }} />
+        <div style={{ padding: '0 20px 16px' }}>
+          <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: '#333', borderRadius: 999, width: `${pct}%`, transition: 'width 0.3s' }} />
           </div>
         </div>
 
-        <div className="flex-1 px-5 flex flex-col justify-center">
-          <div className="text-center mb-6">
-            <p className="section-label">Confusing Pair #{group.groupNumber}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div style={{ flex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <p className="section-label" style={{ textAlign: 'center', marginBottom: 16 }}>
+            Confusing Pair #{group.groupNumber}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {group.words.map((w, i) => (
-              <motion.div key={i} layout className="card-md p-5">
-                <p className="text-xl font-black text-charcoal mb-2">{w.word}</p>
+              <div key={i} className="card" style={{ padding: 16 }}>
+                <p style={{ fontSize: 18, fontWeight: 900, color: '#111', marginBottom: 8 }}>{w.word}</p>
                 <AnimatePresence>
                   {isRevealed(group.groupNumber, i) ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <p className="text-charcoal text-sm leading-relaxed">{w.meaning}</p>
+                      <p style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }}>{w.meaning}</p>
                       {w.example && (
-                        <p className="text-xs italic mt-2 leading-relaxed" style={{ color: '#E8735A' }}>"{w.example}"</p>
+                        <p style={{ fontSize: 11, color: '#888', fontStyle: 'italic', marginTop: 8, lineHeight: 1.4 }}>"{w.example}"</p>
                       )}
                     </motion.div>
                   ) : (
-                    <motion.button whileTap={{ scale: 0.93 }} onClick={() => reveal(group.groupNumber, i)}
-                      className="w-full py-2 rounded-xl text-xs font-semibold pressable"
-                      style={{ background: '#FDF0EC', color: '#E8735A', border: 'none', cursor: 'pointer' }}
+                    <motion.button whileTap={{ scale: 0.93 }}
+                      onClick={() => reveal(group.groupNumber, i)}
+                      style={{ width: '100%', padding: '8px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: '#EAEAE8', color: '#777', border: 'none', cursor: 'pointer' }}
                       id={`reveal-${group.groupNumber}-${i}`}>
                       Tap to reveal
                     </motion.button>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="flex gap-3 px-5 pb-36">
+        <div style={{ display: 'flex', gap: 10, padding: '20px 20px 120px' }}>
           <motion.button whileTap={{ scale: 0.96 }}
             onClick={() => { setPracticeIdx((i) => Math.max(0, i - 1)); setRevealed(new Set()); }}
             disabled={practiceIdx === 0}
-            className="flex-1 py-3.5 rounded-2xl font-semibold pressable disabled:opacity-40"
-            style={{ background: '#FFFFFF', color: '#6B7280', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', cursor: 'pointer' }}
+            className="btn-secondary pressable"
+            style={{ flex: 1, padding: '14px', borderRadius: '1.25rem', fontSize: 14, opacity: practiceIdx === 0 ? 0.4 : 1 }}
             id="cw-prev">← Prev</motion.button>
           <motion.button whileTap={{ scale: 0.96 }}
             onClick={() => { setPracticeIdx((i) => Math.min(filtered.length - 1, i + 1)); setRevealed(new Set()); }}
             disabled={practiceIdx >= filtered.length - 1}
-            className="flex-1 py-3.5 rounded-2xl font-bold text-white pressable disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg,#E8735A,#F4A492)', border: 'none', cursor: 'pointer' }}
+            className="btn-primary pressable"
+            style={{ flex: 1, padding: '14px', borderRadius: '1.25rem', fontSize: 14, fontWeight: 700, opacity: practiceIdx >= filtered.length - 1 ? 0.4 : 1 }}
             id="cw-next">Next →</motion.button>
         </div>
       </div>
@@ -92,47 +97,48 @@ export default function ConfusingWords() {
   }
 
   return (
-    <div className="page-in min-h-screen" style={{ background: '#FAF9F6' }}>
-      <div className="sticky top-0 z-10 px-5 pt-14 pb-3"
-        style={{ background: 'rgba(250,249,246,0.92)', backdropFilter: 'blur(16px)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-black text-charcoal" style={{ letterSpacing: '-0.02em' }}>Easily Confused</h1>
+    <div className="page-in" style={{ minHeight: '100dvh', background: '#F2F2F0' }}>
+      {/* Sticky header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '52px 20px 12px', background: 'rgba(242,242,240,0.95)', backdropFilter: 'blur(16px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', margin: 0 }}>Easily Confused</h1>
           <motion.button whileTap={{ scale: 0.94 }} onClick={() => setPractice(true)}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white pressable"
-            style={{ background: 'linear-gradient(135deg,#E8735A,#F4A492)', border: 'none', cursor: 'pointer' }}
-            id="cw-practice-btn">Practice</motion.button>
+            className="btn-primary pressable"
+            style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, borderRadius: 999 }}
+            id="cw-practice-btn">
+            Practice
+          </motion.button>
         </div>
-        <div className="relative">
-          <Search size={16} color="#9CA3AF" className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <div style={{ position: 'relative' }}>
+          <Search size={15} color="#ADADAD" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
           <input type="search" placeholder="Search confusing pairs…" value={search}
             onChange={(e) => setSearch(e.target.value)} className="search-bar" id="cw-search" />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 pressable"
-              style={{ background: 'none', border: 'none' }}>
-              <X size={16} color="#9CA3AF" />
+            <button onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <X size={15} color="#ADADAD" />
             </button>
           )}
         </div>
       </div>
 
-      <div className="px-5 py-2">
-        <span className="text-xs text-muted font-medium">{filtered.length} pairs</span>
+      <div style={{ padding: '8px 20px 4px' }}>
+        <span style={{ fontSize: 12, color: '#ADADAD', fontWeight: 600 }}>{filtered.length} pairs</span>
       </div>
 
-      <div className="px-4 pb-6 flex flex-col gap-3">
+      <div style={{ padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.map((group) => (
-          <div key={group.groupNumber} className="card overflow-hidden">
-            <div className="px-4 py-2" style={{ background: '#FDF0EC', borderBottom: '1px solid #F0EDE8' }}>
-              <p className="text-xs font-bold" style={{ color: '#C2513A' }}>Pair #{group.groupNumber}</p>
+          <div key={group.groupNumber} className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '8px 16px', background: '#EAEAE8', borderBottom: '1px solid #E0E0DE' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#888', margin: 0 }}>Pair #{group.groupNumber}</p>
             </div>
-            <div className="grid grid-cols-2">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
               {group.words.map((w, i) => (
-                <div key={i} className="p-4"
-                  style={{ borderRight: i === 0 ? '1px solid #F0EDE8' : 'none' }}>
-                  <p className="font-black text-charcoal text-base mb-1">{w.word}</p>
-                  <p className="text-charcoal text-sm leading-relaxed">{w.meaning}</p>
+                <div key={i} style={{ padding: 14, borderRight: i === 0 ? '1px solid #EAEAE8' : 'none' }}>
+                  <p style={{ fontWeight: 900, color: '#111', fontSize: 15, margin: '0 0 4px' }}>{w.word}</p>
+                  <p style={{ fontSize: 12, color: '#555', lineHeight: 1.5, margin: 0 }}>{w.meaning}</p>
                   {w.example && (
-                    <p className="text-xs italic mt-2 leading-relaxed" style={{ color: '#E8735A' }}>"{w.example}"</p>
+                    <p style={{ fontSize: 11, color: '#999', fontStyle: 'italic', marginTop: 6, lineHeight: 1.4 }}>"{w.example}"</p>
                   )}
                 </div>
               ))}
