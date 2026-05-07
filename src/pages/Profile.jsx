@@ -67,11 +67,6 @@ export default function Profile() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   const stats = getAllStats(wordlists);
   const daily = getDailyGoal();
   const gameScores = getGameScores();
