@@ -156,7 +156,7 @@ export default function Profile() {
       <div style={{ padding: '52px 20px 32px' }}>
         {/* ── Profile & Auth Header ── */}
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: '0 0 16px' }}>
-          Profile
+          {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
         </h1>
 
         {!session ? (
@@ -191,10 +191,9 @@ export default function Profile() {
             </p>
           </div>
         ) : (
-          <div className="card" style={{ padding: '16px 20px', marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>{profileName || session.user.user_metadata?.full_name || 'Logged in'}</p>
-              <p style={{ fontSize: 13, color: '#7A7A7A', margin: 0 }}>{session.user.email}</p>
+              <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>{session.user.email}</p>
             </div>
             <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
               style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
