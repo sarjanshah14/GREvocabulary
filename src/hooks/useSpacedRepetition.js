@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { getSessionPool, filterWords, updateWordState } from '../utils/engine';
+import { getSessionPool, filterWords, updateWordState, getDailyGoal } from '../utils/engine';
 
 export function useSpacedRepetition(allWords, mode = 'all') {
   const filtered = filterWords(allWords, mode);
 
   const [pool] = useState(() => {
-    if (mode === 'due') return getSessionPool(filtered, 50);
-    return [...filtered].sort(() => Math.random() - 0.5);
+    const dailyGoal = getDailyGoal().goal || 30;
+    return getSessionPool(filtered, dailyGoal);
   });
 
   const [index, setIndex] = useState(0);
@@ -34,6 +34,7 @@ export function useSpacedRepetition(allWords, mode = 'all') {
     index,
     total,
     swipe,
+    resetIndex: () => setIndex(0),
     isAnimating,
     isDone: index >= pool.length,
   };

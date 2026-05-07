@@ -66,7 +66,7 @@ export default function Home() {
             <div>
               <p className="section-label mb-1">Daily Goal</p>
               <p style={{ fontSize: 32, fontWeight: 900, color: '#111', lineHeight: 1 }}>
-                {daily.count}
+                {Math.min(daily.count, daily.goal)}
                 <span style={{ fontSize: 18, fontWeight: 600, color: '#ADADAD' }}>
                   {' '}/ {daily.goal}
                 </span>

@@ -1,17 +1,52 @@
--- Create a table for user progress
-CREATE TABLE public.user_progress (
-  user_id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  data JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
+-- 1. Profiles Table
+create table public.profiles (
+  id uuid references auth.users not null primary key,
+  email text,
+  name text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+alter table public.profiles enable row level security;
+create policy "Users can view own profile." on profiles for select using (auth.uid() = id);
+create policy "Users can update own profile." on profiles for update using (auth.uid() = id);
+create policy "Users can insert own profile." on profiles for insert with check (auth.uid() = id);
 
--- Set up Row Level Security (RLS)
-ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
+-- 2. User Stats Table (Streak, Daily Goal)
+create table public.user_stats (
+  user_id uuid references public.profiles(id) not null primary key,
+  streak_current integer default 0,
+  streak_last_date date,
+  daily_goal integer default 30,
+  daily_count integer default 0,
+  daily_last_date date,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+alter table public.user_stats enable row level security;
+create policy "Users can view own stats." on user_stats for select using (auth.uid() = user_id);
+create policy "Users can update own stats." on user_stats for update using (auth.uid() = user_id);
+create policy "Users can insert own stats." on user_stats for insert with check (auth.uid() = user_id);
 
--- Create policy to allow users to select only their own data
-CREATE POLICY "Users can view own progress" ON public.user_progress
-  FOR SELECT USING (auth.uid() = user_id);
-
--- Create policy to allow users to insert/update their own data
-CREATE POLICY "Users can insert/update own progress" ON public.user_progress
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+-- 3. User Words Table (Progress for each word)
+create table public.user_words (
+  user_id uuid references public.profiles(id) not null,
+  word text not null,
+  score integer default 0,
+  correct_count integer default 0,
+  incorrect_count integer default 0,
+  review_count integer default 0,
+  last_reviewed date,
+  next_review date,
+  interval integer default 1,
+  learning_stage text default 'new',
+  is_bookmarked boolean default false,
+  is_favourite boolean default false,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (user_id, word)
+);
+alter table public.user_words enable row level security;
+create policy "Users can view own words." on user_words for select using (auth.uid() = user_id);
+create policy "Users can update own words." on user_words for update using (auth.uid() = user_id);
+create policy "Users can insert own words." on user_words for insert with check (auth.uid() = user_id);
+create policy "Users can delete own words." on user_words for delete using (auth.uid() = user_id);

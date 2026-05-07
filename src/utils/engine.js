@@ -280,9 +280,16 @@ export function getSessionPool(allWords, count = 50) {
   // Build weighted array
   const weighted = [];
   pool.forEach((w) => {
-    const base = Math.max(1, 10 - (w.score || 0));
+    let base = Math.max(1, 10 - (w.score || 0));
     const hfBoost = w.isHighFrequency ? 3 : 1;
-    const weight = base * hfBoost;
+    let weight = base * hfBoost;
+
+    // Heavily deprioritize mastered words: 90% chance to skip adding them to the pool
+    if (w.learningStage === 'mastered') {
+      if (Math.random() > 0.1) return;
+      weight = 1; // if it survives, give it minimum weight
+    }
+
     for (let i = 0; i < weight; i++) weighted.push(w);
   });
 

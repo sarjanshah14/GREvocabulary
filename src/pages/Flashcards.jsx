@@ -103,7 +103,7 @@ function ModeSheet({ current, onSelect, onClose }) {
 
 // ─── Session complete ─────────────────────────────────────────────────────────
 
-function SessionDone({ total, mode, onRestart, onHome }) {
+function SessionDone({ total, mode, onNewBatch, onSameBatch, onHome }) {
   useEffect(() => { incrementSessions(); updateStreak(); }, []);
 
   const modeLabel = {
@@ -138,11 +138,17 @@ function SessionDone({ total, mode, onRestart, onHome }) {
       </p>
 
       <motion.button
-        whileTap={{ scale: 0.97 }} onClick={onRestart}
+        whileTap={{ scale: 0.97 }} onClick={onNewBatch}
         className="btn-primary pressable w-full"
-        style={{ marginBottom: 12, padding: '16px', borderRadius: '1.25rem', fontSize: 16, fontWeight: 700 }}
-        id="fc-restart">
-        Practice Again
+        style={{ marginBottom: 10, padding: '16px', borderRadius: '1.25rem', fontSize: 16, fontWeight: 700 }}
+        id="fc-new-batch">
+        Practice New Batch
+      </motion.button>
+      <motion.button
+        whileTap={{ scale: 0.97 }} onClick={onSameBatch}
+        style={{ width: '100%', marginBottom: 12, padding: '14px', borderRadius: '1.25rem', fontSize: 15, fontWeight: 700, border: 'none', background: '#EAEAE8', color: '#111', cursor: 'pointer' }}
+        id="fc-same-batch">
+        Review Same Batch
       </motion.button>
       <motion.button
         whileTap={{ scale: 0.97 }} onClick={onHome}
@@ -171,11 +177,8 @@ export default function Flashcards() {
 
   const cardRef = useRef(null);
 
-  const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode);
+  const { pool, current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(wordlists, mode);
   const daily = getDailyGoal();
-
-  // Real word count for the selected mode (not the pool cap)
-  const modeTotal = getModeCount(mode);
 
   const handleSelect = (m) => { setMode(m); setShowSheet(false); };
   const handleFav   = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
@@ -200,12 +203,13 @@ export default function Flashcards() {
   const isFav  = current ? favourites.includes(current.word) : false;
   const isBook = current ? bookmarks.includes(current.word) : false;
 
-  if (isDone && !showSheet) {
+  if (isDone && !showSheet && total > 0) {
     return (
       <SessionDone
         total={total}
         mode={mode}
-        onRestart={handleRestart}
+        onNewBatch={handleRestart}
+        onSameBatch={resetIndex}
         onHome={() => navigate('/')}
       />
     );
@@ -243,9 +247,9 @@ export default function Flashcards() {
             {modeNames[mode] || 'All Words'}
           </p>
           <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
-            {index} of {modeTotal} · Goal:{' '}
+            {index} of {total} · Goal:{' '}
             <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>
-              {daily.count}/{daily.goal}
+              {Math.min(daily.count, daily.goal)}/{daily.goal}
             </strong>
           </p>
         </div>
@@ -275,7 +279,7 @@ export default function Flashcards() {
             />
           </div>
           <p style={{ fontSize: 10, color: '#ADADAD', whiteSpace: 'nowrap', margin: 0 }}>
-            {daily.count >= daily.goal ? '✓ Goal done' : `${daily.count}/${daily.goal} today`}
+            {daily.count >= daily.goal ? '✓ Goal done' : `${Math.min(daily.count, daily.goal)}/${daily.goal} today`}
           </p>
         </div>
       </div>

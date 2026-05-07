@@ -28,7 +28,7 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #E8E8E6;
+  background: #F2F2F0;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   color: #111111;
@@ -38,7 +38,7 @@ html, body {
   min-height: 100dvh;
   display: flex;
   justify-content: center;
-  background: #E8E8E6;
+  background: #F2F2F0;
 }
 
 /* Safe area padding utility */

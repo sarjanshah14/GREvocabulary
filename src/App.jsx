@@ -24,6 +24,9 @@ export default function App() {
       document.documentElement.classList.add('dark-mode');
       const metaTheme = document.getElementById('meta-theme-color');
       if (metaTheme) metaTheme.setAttribute('content', '#0D0D0F');
+    } else {
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (metaTheme) metaTheme.setAttribute('content', '#F2F2F0');
     }
   }, []);
 

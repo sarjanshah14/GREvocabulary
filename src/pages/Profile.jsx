@@ -65,8 +65,10 @@ export default function Profile() {
 
   // Auth State
   const [session, setSession] = useState(null);
+  const [profileName, setProfileName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [authMsg, setAuthMsg] = useState('');
@@ -79,6 +81,10 @@ export default function Profile() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        // Fetch profile
+        supabase.from('profiles').select('name').eq('id', session.user.id).single().then(({data}) => {
+          if (data) setProfileName(data.name);
+        });
         // Pull cloud data on successful login
         fetchCloudData(session.user.id).then(() => refresh());
       }
@@ -90,12 +96,32 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
     setAuthMsg('');
-    const { error } = authMode === 'login' 
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+    
+    let error;
+    if (authMode === 'login') {
+      const res = await supabase.auth.signInWithPassword({ email, password });
+      error = res.error;
+    } else {
+      const res = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: { data: { full_name: name } }
+      });
+      error = res.error;
+      
+      // Auto-create profile if successful
+      if (!error && res.data?.user) {
+        await supabase.from('profiles').upsert({
+          id: res.data.user.id,
+          email: email,
+          name: name
+        });
+        setProfileName(name);
+      }
+    }
 
     if (error) setAuthMsg(error.message);
-    else if (authMode === 'signup') setAuthMsg('Check your email for the confirmation link!');
+    else if (authMode === 'signup') setAuthMsg('Signed up successfully!');
     setLoading(false);
   };
 
@@ -142,6 +168,10 @@ export default function Profile() {
               Sign in to automatically save your progress and streaks across all your devices.
             </p>
             <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {authMode === 'signup' && (
+                <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '1rem', border: '1px solid #EAEAE8', background: '#F9F9F9', fontSize: 14 }} />
+              )}
               <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
                 style={{ width: '100%', padding: '12px 16px', borderRadius: '1rem', border: '1px solid #EAEAE8', background: '#F9F9F9', fontSize: 14 }} />
               <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
@@ -151,7 +181,7 @@ export default function Profile() {
                 {loading ? 'Loading...' : (authMode === 'login' ? 'Log In' : 'Sign Up')}
               </motion.button>
             </form>
-            {authMsg && <p style={{ fontSize: 12, color: authMsg.includes('Check') ? '#4CAF50' : '#E53935', marginTop: 12 }}>{authMsg}</p>}
+            {authMsg && <p style={{ fontSize: 12, color: authMsg.includes('Check') || authMsg.includes('success') ? '#4CAF50' : '#E53935', marginTop: 12 }}>{authMsg}</p>}
             <p style={{ fontSize: 12, color: '#ADADAD', textAlign: 'center', marginTop: 16 }}>
               {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
               <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthMsg(''); }}
@@ -163,7 +193,7 @@ export default function Profile() {
         ) : (
           <div className="card" style={{ padding: '16px 20px', marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>Logged in as</p>
+              <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>{profileName || session.user.user_metadata?.full_name || 'Logged in'}</p>
               <p style={{ fontSize: 13, color: '#7A7A7A', margin: 0 }}>{session.user.email}</p>
             </div>
             <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
@@ -216,7 +246,7 @@ export default function Profile() {
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>Daily Goal</p>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{daily.count} / {daily.goal}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{Math.min(daily.count, daily.goal)} / {daily.goal}</span>
           </div>
           <div style={{ height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
             <motion.div initial={{ width: 0 }} animate={{ width: `${goalPct}%` }} transition={{ duration: 0.7 }}
