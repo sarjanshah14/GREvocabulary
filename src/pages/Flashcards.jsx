@@ -247,7 +247,7 @@ export default function Flashcards() {
             {modeNames[mode] || 'All Words'}
           </p>
           <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
-            {index} of {total} · Goal:{' '}
+            Card {index + 1} · Goal:{' '}
             <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>
               {Math.min(daily.count, daily.goal)}/{daily.goal}
             </strong>

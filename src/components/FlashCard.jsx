@@ -101,6 +101,7 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
           cursor: 'grab',
           touchAction: 'none',
           willChange: 'transform',
+          aspectRatio: '1/1',
         }}
         whileDrag={{ cursor: 'grabbing', scale: 1.01 }}
       >
