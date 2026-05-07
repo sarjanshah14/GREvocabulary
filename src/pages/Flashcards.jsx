@@ -130,11 +130,8 @@ function SessionDone({ total, mode, onNewBatch, onSameBatch, onHome }) {
         Session Complete!
       </h2>
       <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 6px' }}>Mode: {modeLabel}</p>
-      <p style={{ fontSize: 80, fontWeight: 900, color: '#111', lineHeight: 1, margin: '0 0 4px' }}>
-        {total}
-      </p>
-      <p style={{ fontSize: 14, color: '#ADADAD', margin: '0 0 36px' }}>
-        words reviewed this session
+      <p style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: '0 0 36px' }}>
+        Great job! You've completed your batch.
       </p>
 
       <motion.button

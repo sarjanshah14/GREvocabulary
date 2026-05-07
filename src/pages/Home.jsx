@@ -121,7 +121,7 @@ export default function Home() {
               {stats.mastered}
             </p>
             <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 4 }}>
-              words mastered
+              of {stats.total} words
             </p>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function Home() {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            { icon: BookOpen, label: 'Browse Words', sub: `All words`, path: '/library' },
+            { icon: BookOpen, label: 'Browse Words', sub: `${stats.total} words`, path: '/library' },
             { icon: Grid3x3,  label: 'Word Groups',  sub: 'Match the theme',      path: '/groups/practice' },
             { icon: HelpCircle,label: 'Confusing Pairs', sub: '106 tricky pairs', path: '/confusing' },
             { icon: BarChart2, label: 'My Progress',  sub: `${stats.pct}% mastered`, path: '/dashboard' },
