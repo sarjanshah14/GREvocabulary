@@ -10,7 +10,7 @@ import {
   toggleBookmark, toggleFavourite,
   getBookmarks, getFavourites,
   incrementSessions, updateStreak,
-  filterWords,
+  filterWords, getDailyGoal,
 } from '../utils/engine';
 
 const { wordlists } = data;
@@ -151,6 +151,7 @@ export default function Flashcards() {
   const [favourites, setFavourites] = useState(() => getFavourites());
 
   const { current, index, total, swipe, isDone } = useSpacedRepetition(wordlists, mode);
+  const daily = getDailyGoal();
 
   const handleSelect = (m) => { setMode(m); setShowSheet(false); };
   const handleFav  = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
@@ -196,7 +197,7 @@ export default function Flashcards() {
       )}
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '68px 20px 12px' }}>
         <motion.button whileTap={{ scale: 0.88 }} onClick={() => navigate('/')}
           style={{ width: 40, height: 40, borderRadius: 999, background: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.08)', cursor: 'pointer' }}
           id="fc-back">
@@ -205,8 +206,8 @@ export default function Flashcards() {
 
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>{modeNames[mode] || 'All Words'}</p>
-          <p style={{ fontSize: 12, color: '#ADADAD', margin: '2px 0 0' }}>
-            {index} of {total} words reviewed
+          <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
+            {index} of {total} · Goal: <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>{daily.count}/{daily.goal}</strong> today
           </p>
         </div>
 
@@ -217,16 +218,29 @@ export default function Flashcards() {
         </motion.button>
       </div>
 
-      {/* ── Progress bar ── */}
+      {/* ── Progress bars ── */}
       <div style={{ padding: '0 20px 12px' }}>
-        <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
+        {/* Session progress */}
+        <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden', marginBottom: 6 }}>
           <motion.div
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.3 }}
             style={{ height: '100%', background: '#333', borderRadius: 999 }}
           />
         </div>
-        <p style={{ fontSize: 10, color: '#ADADAD', marginTop: 4 }}>{deckLabel()}</p>
+        {/* Daily goal progress */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, height: 3, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
+            <motion.div
+              animate={{ width: `${Math.min(100, Math.round((daily.count / daily.goal) * 100))}%` }}
+              transition={{ duration: 0.5 }}
+              style={{ height: '100%', background: '#ADADAD', borderRadius: 999 }}
+            />
+          </div>
+          <p style={{ fontSize: 10, color: '#ADADAD', whiteSpace: 'nowrap', margin: 0 }}>
+            {daily.count >= daily.goal ? '✓ Daily goal done' : `${daily.count}/${daily.goal} daily goal`}
+          </p>
+        </div>
       </div>
 
       {/* ── Fav / Bookmark row ── */}
@@ -276,7 +290,7 @@ export default function Flashcards() {
       </div>
 
       {/* ── Swipe buttons ── */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 120px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0 140px' }}>
         <SwipeButtons onLeft={() => swipe('left')} onRight={() => swipe('right')} disabled={!current} />
       </div>
     </div>
