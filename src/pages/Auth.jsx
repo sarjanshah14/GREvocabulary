@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 export default function Auth() {
@@ -9,6 +10,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [authMsg, setAuthMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -112,11 +114,29 @@ export default function Auth() {
             onFocus={(e) => e.target.style.borderColor = '#111'}
             onBlur={(e) => e.target.style.borderColor = '#EAEAE8'}
           />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
-            style={{ width: '100%', padding: '14px 18px', borderRadius: '14px', border: '1px solid #EAEAE8', background: '#FBFBFB', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} 
-            onFocus={(e) => e.target.style.borderColor = '#111'}
-            onBlur={(e) => e.target.style.borderColor = '#EAEAE8'}
-          />
+          <div style={{ position: 'relative' }}>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              placeholder="Password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required
+              style={{ width: '100%', padding: '14px 44px 14px 18px', borderRadius: '14px', border: '1px solid #EAEAE8', background: '#FBFBFB', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} 
+              onFocus={(e) => e.target.style.borderColor = '#111'}
+              onBlur={(e) => e.target.style.borderColor = '#EAEAE8'}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              {showPassword ? <EyeOff size={18} color="#ADADAD" /> : <Eye size={18} color="#ADADAD" />}
+            </button>
+          </div>
           
           <motion.button 
             whileTap={{ scale: 0.96 }} 
