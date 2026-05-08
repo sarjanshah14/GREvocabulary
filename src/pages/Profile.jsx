@@ -141,21 +141,15 @@ export default function Profile({ session }) {
 
       <div style={{ padding: '52px 20px 32px' }}>
         {/* ── Profile & Auth Header ── */}
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: '0 0 16px' }}>
-          {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
-        </h1>
-
         <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div />
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
+            {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
+          </h1>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
-            style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+            style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>
             Log Out
           </motion.button>
         </div>
-
-        <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', letterSpacing: '-0.02em', margin: '0 0 16px' }}>
-          My Progress
-        </h2>
 
         {/* ── Overall ring + mastered ── */}
         <div className="card" style={{ padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
