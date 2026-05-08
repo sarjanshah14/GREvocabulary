@@ -119,8 +119,16 @@ export default function Profile({ session }) {
     d.setDate(d.getDate() - (6 - idx));
     const iso = d.toISOString().split('T')[0];
     const row = dailyHistory[iso] || { count: 0, goal: 30 };
-    return { iso, count: row.count || 0, goal: row.goal || 30, label: d.toLocaleDateString('en-US', { weekday: 'short' }) };
+    return { 
+      iso, 
+      count: row.count || 0, 
+      goal: row.goal || 30, 
+      label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      dateNum: d.getDate()
+    };
   });
+
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <div className="page-in pb-safe-bottom" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
@@ -141,10 +149,13 @@ export default function Profile({ session }) {
 
       <div style={{ padding: '52px 20px 32px' }}>
         {/* ── Profile & Auth Header ── */}
-        <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
-            {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
-          </h1>
+        <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
+              {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
+            </h1>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#ADADAD', marginTop: 2 }}>{todayStr}</p>
+          </div>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
             style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer', lineHeight: 1 }}>
             Log Out
@@ -216,7 +227,9 @@ export default function Profile({ session }) {
                       background: done ? '#111' : `conic-gradient(#111 ${pct}%, #fff ${pct}% 100%)`,
                     }}
                   />
-                  <p style={{ margin: 0, fontSize: 10, color: '#8A8A8A', textAlign: 'center' }}>{d.label}</p>
+                  <p style={{ margin: 0, fontSize: 10, color: '#8A8A8A', textAlign: 'center' }}>
+                    {d.label} <span style={{ color: '#111', fontWeight: 700 }}>{d.dateNum}</span>
+                  </p>
                 </button>
               );
             })}
