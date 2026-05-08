@@ -3,37 +3,61 @@ import { motion } from 'framer-motion';
 import { supabase } from '../utils/supabaseClient';
 import data from '../../data.json';
 import { getAllStats, getDailyGoal, getGameScores, resetAll, initProgress } from '../utils/engine';
-import { fetchCloudData } from '../utils/sync';
+import { fetchCloudData, wipeCloudData } from '../utils/sync';
 
 const { wordlists } = data;
 
 function ConfirmReset({ onCancel, onConfirm }) {
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    await onConfirm();
+    setLoading(false);
+  };
+
   return (
-    <div className="sheet-overlay" onClick={onCancel}>
-      <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-overlay" style={{ zIndex: 1000 }}>
+      <motion.div 
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        className="sheet-panel" 
+        style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}
+      >
         <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', margin: '0 auto 20px' }} />
         <h2 style={{ fontSize: 20, fontWeight: 900, color: '#111', margin: '0 0 8px' }}>Reset All Progress</h2>
         <p style={{ fontSize: 13, color: '#ADADAD', margin: '0 0 24px', lineHeight: 1.6 }}>
-          This erases mastery scores for all {wordlists.length} words, your streak, and daily goal. Cannot be undone.
+          This erases mastery scores for all {wordlists.length} words, your streak, and daily goal. This action is permanent.
         </p>
+        
         {step === 0 ? (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStep(1)}
-            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#333', color: '#fff', marginBottom: 10 }}>
+          <motion.button 
+            whileTap={{ scale: 0.96 }} 
+            onClick={() => setStep(1)}
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', background: '#F2F2F0', color: '#111', marginBottom: 12 }}
+          >
             Yes, reset everything
           </motion.button>
         ) : (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={onConfirm}
-            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginBottom: 10 }}>
-            Confirm — erase all data ✓
+          <motion.button 
+            whileTap={{ scale: 0.96 }} 
+            disabled={loading}
+            onClick={handleConfirm}
+            style={{ width: '100%', padding: '16px', borderRadius: '1.25rem', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', background: '#111', color: '#fff', marginBottom: 12, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Wiping...' : 'Confirm — erase all data ✓'}
           </motion.button>
         )}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onCancel}
-          className="btn-secondary pressable w-full"
-          style={{ padding: '12px', borderRadius: '1.25rem' }}>
+        
+        <motion.button 
+          whileTap={{ scale: 0.96 }} 
+          onClick={onCancel}
+          disabled={loading}
+          style={{ width: '100%', padding: '14px', borderRadius: '1.25rem', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', background: 'transparent', color: '#ADADAD' }}
+        >
           Cancel
         </motion.button>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -95,11 +119,11 @@ export default function Profile({ session }) {
         <ConfirmReset
           onCancel={() => setShowReset(false)}
           onConfirm={async () => {
+            if (session) {
+              await wipeCloudData(session.user.id);
+            }
             resetAll();
             initProgress(wordlists);
-            if (session) {
-              await pushCloudData(session.user.id);
-            }
             setShowReset(false);
             refresh();
           }}

@@ -121,3 +121,14 @@ export async function fetchCloudData(userId) {
     console.error('Failed to pull from cloud', err);
   }
 }
+
+export async function wipeCloudData(userId) {
+  try {
+    await Promise.all([
+      supabase.from('user_stats').delete().eq('user_id', userId),
+      supabase.from('user_words').delete().eq('user_id', userId)
+    ]);
+  } catch (err) {
+    console.error('Failed to wipe cloud data', err);
+  }
+}
