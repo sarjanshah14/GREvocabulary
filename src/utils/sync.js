@@ -76,6 +76,7 @@ export async function pushCloudData() {
         day_date: date,
         words_done: Math.max(0, row?.count || 0),
         daily_goal: Math.max(1, row?.goal || 30),
+        practiced_words: Array.isArray(row?.words) ? row.words : [],
         updated_at: row?.updatedAt || now,
       }));
       if (dailyRows.length > 0) {
@@ -145,6 +146,7 @@ export async function fetchCloudData(userId) {
         history[row.day_date] = {
           count: Math.max(0, row.words_done || 0),
           goal: Math.max(1, row.daily_goal || 30),
+          words: Array.isArray(row.practiced_words) ? row.practiced_words : [],
           updatedAt: row.updated_at || new Date().toISOString(),
         };
       }

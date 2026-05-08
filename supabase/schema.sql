@@ -57,6 +57,7 @@ create table public.user_daily_words (
   day_date date not null,
   words_done integer default 0,
   daily_goal integer default 30,
+  practiced_words text[] default '{}',
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   primary key (user_id, day_date)
 );

@@ -11,7 +11,7 @@ const KEYS = {
   PROGRESS:  'gre_progress',   // { [word]: WordState }
   STREAK:    'gre_streak',     // { current, lastDate }
   DAILY:     'gre_daily',      // { date, count, goal }
-  DAILY_WORDS: 'gre_daily_words', // { [YYYY-MM-DD]: { count, goal, updatedAt } }
+  DAILY_WORDS: 'gre_daily_words', // { [YYYY-MM-DD]: { count, goal, words, updatedAt } }
   BOOKMARKS: 'gre_bookmarks',  // string[]
   SESSIONS:  'gre_sessions',   // number
   GAME_SCORES: 'gre_game_scores', // { [phrase]: { accuracy, date } }
@@ -112,7 +112,7 @@ export function updateWordState(word, correct) {
   ls_set(KEYS.PROGRESS, progress);
 
   // Side effects
-  incrementDaily();
+  incrementDaily(word);
 
   return state;
 }
@@ -204,21 +204,25 @@ export function getDailyWordsHistory() {
   return ls_get(KEYS.DAILY_WORDS, {});
 }
 
-function upsertDailyHistory(date, count, goal) {
+function upsertDailyHistory(date, count, goal, word = null) {
   const hist = getDailyWordsHistory();
+  const prev = hist[date] || { count: 0, goal: 30, words: [] };
+  const prevWords = Array.isArray(prev.words) ? prev.words : [];
+  const words = word && !prevWords.includes(word) ? [...prevWords, word] : prevWords;
   hist[date] = {
     count: Math.max(0, count || 0),
     goal: Math.max(1, goal || 30),
+    words,
     updatedAt: new Date().toISOString(),
   };
   ls_set(KEYS.DAILY_WORDS, hist);
 }
 
-export function incrementDaily() {
+export function incrementDaily(word = null) {
   const daily = getDailyGoal();
   daily.count = (daily.count || 0) + 1;
   ls_set(KEYS.DAILY, daily);
-  upsertDailyHistory(daily.date, daily.count, daily.goal);
+  upsertDailyHistory(daily.date, daily.count, daily.goal, word);
   return daily;
 }
 

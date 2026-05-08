@@ -10,7 +10,7 @@ import {
   toggleBookmark, toggleFavourite,
   getBookmarks, getFavourites,
   incrementSessions, updateStreak,
-  filterWords,
+  filterWords, getDailyWordsHistory,
 } from '../utils/engine';
 
 const { wordlists } = data;
@@ -148,6 +148,7 @@ export default function Flashcards() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlMode = searchParams.get('mode');
+  const historyDate = searchParams.get('historyDate');
 
   // NEVER force-show mode sheet on load. Always start immediately.
   const [showSheet, setShowSheet] = useState(false);
@@ -157,8 +158,19 @@ export default function Flashcards() {
   const [favourites, setFavourites] = useState(() => getFavourites());
 
   const cardRef = useRef(null);
+  const historyRows = getDailyWordsHistory();
+  const historyWordsForDate = historyDate && Array.isArray(historyRows[historyDate]?.words)
+    ? historyRows[historyDate].words
+    : [];
+  const historyPool = historyWordsForDate
+    .map((w) => wordlists.find((x) => x.word === w))
+    .filter(Boolean);
 
-  const { current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(wordlists, mode);
+  const { current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(
+    wordlists,
+    mode,
+    historyPool.length > 0 ? historyPool : null
+  );
 
   const handleSelect = (m) => { setMode(m); setShowSheet(false); };
   const handleFav   = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
@@ -178,7 +190,9 @@ export default function Flashcards() {
     high_frequency: 'High Frequency',
     bookmarks: 'Bookmarks',
     due: 'Due for Review',
+    history: 'History Replay',
   };
+  const currentModeLabel = historyDate ? modeNames.history : (modeNames[mode] || 'All Words');
 
   const isFav  = current ? favourites.includes(current.word) : false;
   const isBook = current ? bookmarks.includes(current.word) : false;
@@ -222,10 +236,10 @@ export default function Flashcards() {
 
         <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
           <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>
-            {modeNames[mode] || 'All Words'}
+            {currentModeLabel}
           </p>
           <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
-            Card {index + 1}
+            {historyDate ? `${historyDate} · Card ${index + 1}` : `Card ${index + 1}`}
           </p>
         </div>
 

@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
 import { getSessionPool, filterWords, updateWordState, getDailyGoal } from '../utils/engine';
 
-export function useSpacedRepetition(allWords, mode = 'all') {
-  const filtered = filterWords(allWords, mode);
+export function useSpacedRepetition(allWords, mode = 'all', customWords = null) {
+  const filtered = customWords || filterWords(allWords, mode);
 
   const [pool] = useState(() => {
+    if (customWords && customWords.length > 0) {
+      return customWords;
+    }
     const dailyGoal = getDailyGoal().goal || 30;
     return getSessionPool(filtered, dailyGoal);
   });
