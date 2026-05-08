@@ -50,3 +50,18 @@ create policy "Users can view own words." on user_words for select using (auth.u
 create policy "Users can update own words." on user_words for update using (auth.uid() = user_id);
 create policy "Users can insert own words." on user_words for insert with check (auth.uid() = user_id);
 create policy "Users can delete own words." on user_words for delete using (auth.uid() = user_id);
+
+-- 4. Daily Words Table (per-day goal progress for calendar UI)
+create table public.user_daily_words (
+  user_id uuid references public.profiles(id) not null,
+  day_date date not null,
+  words_done integer default 0,
+  daily_goal integer default 30,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (user_id, day_date)
+);
+alter table public.user_daily_words enable row level security;
+create policy "Users can view own daily words." on user_daily_words for select using (auth.uid() = user_id);
+create policy "Users can update own daily words." on user_daily_words for update using (auth.uid() = user_id);
+create policy "Users can insert own daily words." on user_daily_words for insert with check (auth.uid() = user_id);
+create policy "Users can delete own daily words." on user_daily_words for delete using (auth.uid() = user_id);

@@ -70,7 +70,7 @@ export default function App() {
             <Auth />
           ) : (
             <Routes>
-              <Route path="/"               element={<Home />} />
+              <Route path="/"               element={<Home session={session} />} />
               <Route path="/library"        element={<WordLibrary />} />
               <Route path="/flashcards"     element={<Flashcards />} />
               <Route path="/groups"         element={<WordGroups />} />

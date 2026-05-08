@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../utils/supabaseClient';
 import data from '../../data.json';
-import { getAllStats, getDailyGoal, getGameScores, resetAll, initProgress } from '../utils/engine';
+import { getAllStats, getGameScores, resetAll, initProgress, getDailyWordsHistory } from '../utils/engine';
 import { fetchCloudData, wipeCloudData } from '../utils/sync';
 
 const { wordlists } = data;
@@ -104,14 +104,23 @@ export default function Profile({ session }) {
     await supabase.auth.signOut();
   };
   const stats = getAllStats(wordlists);
-  const daily = getDailyGoal();
   const gameScores = getGameScores();
   const groupAccs = Object.values(gameScores).map((s) => s.accuracy);
   const groupAvg = groupAccs.length
     ? Math.round(groupAccs.reduce((a, b) => a + b, 0) / groupAccs.length)
     : 0;
 
-  const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
+  const dailyHistory = getDailyWordsHistory();
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const weekRows = Array.from({ length: 7 }).map((_, idx) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (6 - idx));
+    const iso = d.toISOString().split('T')[0];
+    const row = dailyHistory[iso] || { count: 0, goal: 30 };
+    return { iso, count: row.count || 0, goal: row.goal || 30, label: d.toLocaleDateString('en-US', { weekday: 'short' }) };
+  });
 
   return (
     <div className="page-in pb-safe-bottom" style={{ background: '#F2F2F0', minHeight: '100dvh' }}>
@@ -136,10 +145,8 @@ export default function Profile({ session }) {
           {session ? `Hi ${profileName || session.user.user_metadata?.full_name || 'there'}` : 'Profile'}
         </h1>
 
-        <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <p style={{ fontSize: 14, color: '#7A7A7A', margin: 0 }}>{session?.user?.email}</p>
-          </div>
+        <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div />
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleLogout}
             style={{ padding: '8px 16px', borderRadius: 999, background: '#EAEAE8', border: 'none', color: '#111', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
             Log Out
@@ -185,19 +192,34 @@ export default function Profile({ session }) {
           ))}
         </div>
 
-        {/* ── Daily goal ── */}
+        {/* ── Weekly Goal Calendar ── */}
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>Daily Goal</p>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>{Math.min(daily.count, daily.goal)} / {daily.goal}</span>
+          <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: '0 0 12px' }}>Weekly Goal Calendar</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+            {weekRows.map((d) => {
+              const pct = Math.max(0, Math.min(100, Math.round((d.count / d.goal) * 100)));
+              const done = d.count >= d.goal;
+              return (
+                <button
+                  key={d.iso}
+                  onClick={() => setSelectedDay(d)}
+                  style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '999px',
+                      margin: '0 auto 6px',
+                      border: '1px solid #222',
+                      background: done ? '#111' : `conic-gradient(#111 ${pct}%, #fff ${pct}% 100%)`,
+                    }}
+                  />
+                  <p style={{ margin: 0, fontSize: 10, color: '#8A8A8A', textAlign: 'center' }}>{d.label}</p>
+                </button>
+              );
+            })}
           </div>
-          <div style={{ height: 8, background: '#EAEAE8', borderRadius: 999, overflow: 'hidden' }}>
-            <motion.div initial={{ width: 0 }} animate={{ width: `${goalPct}%` }} transition={{ duration: 0.7 }}
-              style={{ height: '100%', background: '#333', borderRadius: 999 }} />
-          </div>
-          <p style={{ fontSize: 11, color: '#ADADAD', marginTop: 6 }}>
-            {daily.count >= daily.goal ? '✓ Goal complete today!' : `${daily.goal - daily.count} more words to reach today's goal`}
-          </p>
         </div>
 
         {/* ── Mastery Breakdown ── */}
@@ -221,6 +243,18 @@ export default function Profile({ session }) {
         >
           Reset All Progress
         </motion.button>
+
+        {selectedDay && (
+          <div className="sheet-overlay" style={{ zIndex: 1000 }} onClick={() => setSelectedDay(null)}>
+            <div className="sheet-panel" style={{ padding: 20 }} onClick={(e) => e.stopPropagation()}>
+              <p style={{ fontSize: 18, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>{selectedDay.label}</p>
+              <p style={{ fontSize: 12, color: '#8A8A8A', margin: '0 0 12px' }}>{selectedDay.iso}</p>
+              <p style={{ fontSize: 14, color: '#111', margin: 0 }}>
+                {Math.min(selectedDay.count, selectedDay.goal)}/{selectedDay.goal} words
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

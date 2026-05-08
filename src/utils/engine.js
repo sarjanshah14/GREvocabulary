@@ -11,6 +11,7 @@ const KEYS = {
   PROGRESS:  'gre_progress',   // { [word]: WordState }
   STREAK:    'gre_streak',     // { current, lastDate }
   DAILY:     'gre_daily',      // { date, count, goal }
+  DAILY_WORDS: 'gre_daily_words', // { [YYYY-MM-DD]: { count, goal, updatedAt } }
   BOOKMARKS: 'gre_bookmarks',  // string[]
   SESSIONS:  'gre_sessions',   // number
   GAME_SCORES: 'gre_game_scores', // { [phrase]: { accuracy, date } }
@@ -192,15 +193,32 @@ export function getDailyGoal() {
     // New day — reset
     const fresh = { date: d, count: 0, goal: stored.goal || 30 };
     ls_set(KEYS.DAILY, fresh);
+    upsertDailyHistory(fresh.date, fresh.count, fresh.goal);
     return fresh;
   }
+  upsertDailyHistory(stored.date, stored.count || 0, stored.goal || 30);
   return stored;
+}
+
+export function getDailyWordsHistory() {
+  return ls_get(KEYS.DAILY_WORDS, {});
+}
+
+function upsertDailyHistory(date, count, goal) {
+  const hist = getDailyWordsHistory();
+  hist[date] = {
+    count: Math.max(0, count || 0),
+    goal: Math.max(1, goal || 30),
+    updatedAt: new Date().toISOString(),
+  };
+  ls_set(KEYS.DAILY_WORDS, hist);
 }
 
 export function incrementDaily() {
   const daily = getDailyGoal();
   daily.count = (daily.count || 0) + 1;
   ls_set(KEYS.DAILY, daily);
+  upsertDailyHistory(daily.date, daily.count, daily.goal);
   return daily;
 }
 
@@ -208,6 +226,7 @@ export function setDailyGoal(n) {
   const daily = getDailyGoal();
   daily.goal = n;
   ls_set(KEYS.DAILY, daily);
+  upsertDailyHistory(daily.date, daily.count, daily.goal);
 }
 
 // ─── Streak ────────────────────────────────────────────────────────────────────

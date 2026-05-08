@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import data from '../../data.json';
 import WordCard from '../components/WordCard';
@@ -15,8 +14,8 @@ export default function WordLibrary() {
   // Only 3 filters — no wordlist numbers
   const filters = [
     { id: 'all',       label: 'All Words' },
-    { id: 'hf',        label: '★ High Freq' },
-    { id: 'bookmarked',label: '🔖 Saved' },
+    { id: 'hf',        label: 'High Freq' },
+    { id: 'bookmarked',label: 'Saved' },
   ];
 
   const filtered = useMemo(() => {
@@ -96,7 +95,6 @@ export default function WordLibrary() {
       <div className="px-4 pb-6 flex flex-col gap-2">
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="text-5xl">{filter === 'bookmarked' ? '🔖' : '🔍'}</div>
             <p className="font-bold text-lg" style={{ color: '#111111' }}>
               {filter === 'bookmarked' ? 'No bookmarks yet' : 'No results found'}
             </p>

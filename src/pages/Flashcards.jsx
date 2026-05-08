@@ -10,17 +10,10 @@ import {
   toggleBookmark, toggleFavourite,
   getBookmarks, getFavourites,
   incrementSessions, updateStreak,
-  filterWords, getDailyGoal,
+  filterWords,
 } from '../utils/engine';
 
 const { wordlists } = data;
-
-// ─── Counts per mode (real numbers) ────────────────────────────────────────
-
-function getModeCount(mode) {
-  const words = filterWords(wordlists, mode);
-  return words.length;
-}
 
 // ─── Mode picker sheet ───────────────────────────────────────────────────────
 // Always has a close/dismiss — tapping overlay OR X closes it.
@@ -32,9 +25,9 @@ function ModeSheet({ current, onSelect, onClose }) {
 
   const modes = [
     { id: 'all',            label: 'All Words',         desc: `${wordlists.length} words · HF appear 3× more` },
-    { id: 'high_frequency', label: '★ High Frequency',  desc: `${hfCount} essential GRE words` },
-    { id: 'bookmarks',      label: '🔖 Bookmarked',      desc: bmCount > 0 ? `${bmCount} saved words` : 'No bookmarks yet' },
-    { id: 'due',            label: '🔄 Due for Review',  desc: dueCount > 0 ? `${dueCount} words due` : 'Nothing due right now' },
+    { id: 'high_frequency', label: 'High Frequency',  desc: `${hfCount} essential GRE words` },
+    { id: 'bookmarks',      label: 'Bookmarked',      desc: bmCount > 0 ? `${bmCount} saved words` : 'No bookmarks yet' },
+    { id: 'due',            label: 'Due for Review',  desc: dueCount > 0 ? `${dueCount} words due` : 'Nothing due right now' },
   ];
 
   return (
@@ -50,9 +43,7 @@ function ModeSheet({ current, onSelect, onClose }) {
           transition={{ type: 'spring', stiffness: 380, damping: 38 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Handle + close row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div style={{ width: 40, height: 4, borderRadius: 999, background: '#E4E4E2', flex: 1, marginRight: 12 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
             <motion.button
               whileTap={{ scale: 0.85 }}
               onClick={onClose}
@@ -103,12 +94,12 @@ function ModeSheet({ current, onSelect, onClose }) {
 
 // ─── Session complete ─────────────────────────────────────────────────────────
 
-function SessionDone({ total, mode, onNewBatch, onSameBatch, onHome }) {
+function SessionDone({ mode, onNewBatch, onSameBatch, onHome }) {
   useEffect(() => { incrementSessions(); updateStreak(); }, []);
 
   const modeLabel = {
     all: 'All Words',
-    high_frequency: '★ High Frequency',
+    high_frequency: 'High Frequency',
     bookmarks: 'Bookmarked',
     due: 'Due for Review',
   }[mode] || 'All Words';
@@ -119,13 +110,6 @@ function SessionDone({ total, mode, onNewBatch, onSameBatch, onHome }) {
       justifyContent: 'center', minHeight: '100dvh', padding: '0 24px',
       textAlign: 'center', background: '#F2F2F0',
     }}>
-      <motion.div
-        initial={{ scale: 0 }} animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-        style={{ fontSize: 64, marginBottom: 20 }}
-      >
-        🎉
-      </motion.div>
       <h2 style={{ fontSize: 32, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>
         Session Complete!
       </h2>
@@ -174,8 +158,7 @@ export default function Flashcards() {
 
   const cardRef = useRef(null);
 
-  const { pool, current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(wordlists, mode);
-  const daily = getDailyGoal();
+  const { current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(wordlists, mode);
 
   const handleSelect = (m) => { setMode(m); setShowSheet(false); };
   const handleFav   = () => { if (current) setFavourites([...toggleFavourite(current.word)]); };
@@ -192,7 +175,7 @@ export default function Flashcards() {
 
   const modeNames = {
     all: 'All Words',
-    high_frequency: '★ High Frequency',
+    high_frequency: 'High Frequency',
     bookmarks: 'Bookmarks',
     due: 'Due for Review',
   };
@@ -213,8 +196,6 @@ export default function Flashcards() {
   }
 
   const pct = total > 0 ? (index / total) * 100 : 0;
-  const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
-
   return (
     <div key={sessionKey} className="page-in" style={{
       display: 'flex', flexDirection: 'column',
@@ -244,10 +225,7 @@ export default function Flashcards() {
             {modeNames[mode] || 'All Words'}
           </p>
           <p style={{ fontSize: 12, color: '#ADADAD', margin: '3px 0 0' }}>
-            Card {index + 1} · Goal:{' '}
-            <strong style={{ color: daily.count >= daily.goal ? '#333' : '#777' }}>
-              {Math.min(daily.count, daily.goal)}/{daily.goal}
-            </strong>
+            Card {index + 1}
           </p>
         </div>
 
@@ -258,26 +236,13 @@ export default function Flashcards() {
         </motion.button>
       </div>
 
-      {/* ── Dual progress bars ── */}
+      {/* ── Session progress bar ── */}
       <div style={{ padding: '4px 20px 12px' }}>
-        {/* Session bar */}
-        <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden', marginBottom: 6 }}>
+        <div style={{ height: 4, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
           <motion.div
             animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }}
             style={{ height: '100%', background: '#333', borderRadius: 999 }}
           />
-        </div>
-        {/* Daily goal bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1, height: 3, background: '#E4E4E2', borderRadius: 999, overflow: 'hidden' }}>
-            <motion.div
-              animate={{ width: `${goalPct}%` }} transition={{ duration: 0.5 }}
-              style={{ height: '100%', background: '#ADADAD', borderRadius: 999 }}
-            />
-          </div>
-          <p style={{ fontSize: 10, color: '#ADADAD', whiteSpace: 'nowrap', margin: 0 }}>
-            {daily.count >= daily.goal ? '✓ Goal done' : `${Math.min(daily.count, daily.goal)}/${daily.goal} today`}
-          </p>
         </div>
       </div>
 

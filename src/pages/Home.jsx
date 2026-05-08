@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Layers, Grid3x3, HelpCircle, BarChart2, Moon, Sun } from 'lucide-react';
+import { BookOpen, Grid3x3, HelpCircle, BarChart2, Moon, Sun } from 'lucide-react';
 import data from '../../data.json';
 import { getAllStats, getDailyGoal } from '../utils/engine';
+import { supabase } from '../utils/supabaseClient';
 
 const { wordlists } = data;
 
-export default function Home() {
+export default function Home({ session }) {
   const navigate = useNavigate();
   const [mode, setMode] = useState('all');
   const [isDark, setIsDark] = useState(() => localStorage.getItem('gre_dark_mode') === 'true');
+  const [profileName, setProfileName] = useState('');
 
   const toggleDark = () => {
     const next = !isDark;
@@ -25,6 +27,19 @@ export default function Home() {
   const daily = getDailyGoal();
   const goalPct = Math.min(100, Math.round((daily.count / daily.goal) * 100));
   const goalDone = daily.count >= daily.goal;
+  const displayName = profileName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')?.[0] || 'there';
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.name) setProfileName(data.name);
+      });
+  }, [session]);
 
   const goFlash = () => {
     const map = {
@@ -42,7 +57,7 @@ export default function Home() {
       {/* ── Header ── */}
       <div className="px-5 pb-4 flex justify-between items-center" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px) + 32px, 72px)' }}>
         <h1 style={{ fontSize: 28, fontWeight: 900, color: '#111', letterSpacing: '-0.03em', margin: 0 }}>
-          GRE Lexicon
+          {`Hi, ${displayName}`}
         </h1>
         <motion.button 
           whileTap={{ scale: 0.85 }} 
@@ -132,9 +147,9 @@ export default function Home() {
         <div style={{ display: 'flex', gap: 8, padding: 4, background: '#E8E8E6', borderRadius: 999 }}>
           {[
             { id: 'all',       label: 'All' },
-            { id: 'hf',        label: '★ HF' },
-            { id: 'bookmarks', label: '🔖 Saved' },
-            { id: 'due',       label: '🔄 Due' },
+            { id: 'hf',        label: 'HF' },
+            { id: 'bookmarks', label: 'Saved' },
+            { id: 'due',       label: 'Due' },
           ].map((t) => (
             <button
               key={t.id}

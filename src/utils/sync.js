@@ -3,6 +3,14 @@ import { supabase } from './supabaseClient';
 // Debounce to prevent hammering Supabase on every flashcard swipe
 let syncTimeout = null;
 
+function parseJSON(raw, fallback) {
+  try {
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function pushCloudData() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return; // User not logged in, just do local
@@ -14,11 +22,9 @@ export async function pushCloudData() {
   syncTimeout = setTimeout(async () => {
     try {
       // 1. Sync User Stats
-      const rawStreak = localStorage.getItem('gre_streak');
-      const rawDaily = localStorage.getItem('gre_daily');
-      
-      const streak = rawStreak ? JSON.parse(rawStreak) : {};
-      const daily = rawDaily ? JSON.parse(rawDaily) : {};
+      const streak = parseJSON(localStorage.getItem('gre_streak'), {});
+      const daily = parseJSON(localStorage.getItem('gre_daily'), {});
+      const now = new Date().toISOString();
 
       await supabase.from('user_stats').upsert({
         user_id: userId,
@@ -27,17 +33,13 @@ export async function pushCloudData() {
         daily_goal: daily.goal || 30,
         daily_count: daily.count || 0,
         daily_last_date: daily.date || null,
-        updated_at: new Date().toISOString()
+        updated_at: now
       });
 
       // 2. Sync User Words
-      const rawProgress = localStorage.getItem('gre_progress');
-      const rawBookmarks = localStorage.getItem('gre_bookmarks');
-      const rawFavs = localStorage.getItem('gre_favourites');
-      
-      const progress = rawProgress ? JSON.parse(rawProgress) : {};
-      const bookmarks = rawBookmarks ? JSON.parse(rawBookmarks) : [];
-      const favs = rawFavs ? JSON.parse(rawFavs) : [];
+      const progress = parseJSON(localStorage.getItem('gre_progress'), {});
+      const bookmarks = parseJSON(localStorage.getItem('gre_bookmarks'), []);
+      const favs = parseJSON(localStorage.getItem('gre_favourites'), []);
 
       const rows = [];
       for (const [word, data] of Object.entries(progress)) {
@@ -56,7 +58,7 @@ export async function pushCloudData() {
             learning_stage: data.learningStage || 'new',
             is_bookmarked: bookmarks.includes(word),
             is_favourite: favs.includes(word),
-            updated_at: new Date().toISOString()
+            updated_at: now
           });
         }
       }
@@ -67,6 +69,19 @@ export async function pushCloudData() {
         if (error) console.error('Cloud Sync Error (Words):', error.message);
       }
 
+      // 3. Sync Daily Word Progress History
+      const dailyHistory = parseJSON(localStorage.getItem('gre_daily_words'), {});
+      const dailyRows = Object.entries(dailyHistory).map(([date, row]) => ({
+        user_id: userId,
+        day_date: date,
+        words_done: Math.max(0, row?.count || 0),
+        daily_goal: Math.max(1, row?.goal || 30),
+        updated_at: row?.updatedAt || now,
+      }));
+      if (dailyRows.length > 0) {
+        const { error } = await supabase.from('user_daily_words').upsert(dailyRows);
+        if (error) console.error('Cloud Sync Error (Daily):', error.message);
+      }
     } catch (err) {
       console.error('Failed to sync to cloud', err);
     }
@@ -82,7 +97,7 @@ export async function fetchCloudData(userId) {
       .eq('user_id', userId)
       .single();
 
-    if (stats) {
+    if (stats?.user_id) {
       localStorage.setItem('gre_streak', JSON.stringify({ current: stats.streak_current, lastDate: stats.streak_last_date }));
       localStorage.setItem('gre_daily', JSON.stringify({ count: stats.daily_count, goal: stats.daily_goal, date: stats.daily_last_date }));
     }
@@ -93,7 +108,7 @@ export async function fetchCloudData(userId) {
       .select('*')
       .eq('user_id', userId);
 
-    if (words && words.length > 0) {
+    if (Array.isArray(words)) {
       const progress = {};
       const bookmarks = [];
       const favs = [];
@@ -117,6 +132,24 @@ export async function fetchCloudData(userId) {
       localStorage.setItem('gre_bookmarks', JSON.stringify(bookmarks));
       localStorage.setItem('gre_favourites', JSON.stringify(favs));
     }
+
+    // 3. Fetch Daily Word History
+    const { data: dailyRows } = await supabase
+      .from('user_daily_words')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (Array.isArray(dailyRows)) {
+      const history = {};
+      for (const row of dailyRows) {
+        history[row.day_date] = {
+          count: Math.max(0, row.words_done || 0),
+          goal: Math.max(1, row.daily_goal || 30),
+          updatedAt: row.updated_at || new Date().toISOString(),
+        };
+      }
+      localStorage.setItem('gre_daily_words', JSON.stringify(history));
+    }
   } catch (err) {
     console.error('Failed to pull from cloud', err);
   }
@@ -126,7 +159,8 @@ export async function wipeCloudData(userId) {
   try {
     await Promise.all([
       supabase.from('user_stats').delete().eq('user_id', userId),
-      supabase.from('user_words').delete().eq('user_id', userId)
+      supabase.from('user_words').delete().eq('user_id', userId),
+      supabase.from('user_daily_words').delete().eq('user_id', userId),
     ]);
   } catch (err) {
     console.error('Failed to wipe cloud data', err);
