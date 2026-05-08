@@ -196,7 +196,14 @@ export default function Profile({ session }) {
               return (
                 <button
                   key={d.iso}
-                  onClick={() => setSelectedDay(d)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setSelectedDay({
+                      ...d,
+                      x: rect.left + (rect.width / 2),
+                      y: rect.top - 8,
+                    });
+                  }}
                   style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
                 >
                   <div
@@ -239,13 +246,39 @@ export default function Profile({ session }) {
         </motion.button>
 
         {selectedDay && (
-          <div className="sheet-overlay" style={{ zIndex: 1000 }} onClick={() => setSelectedDay(null)}>
-            <div className="sheet-panel" style={{ padding: 20 }} onClick={(e) => e.stopPropagation()}>
-              <p style={{ fontSize: 18, fontWeight: 900, color: '#111', margin: '0 0 4px' }}>{selectedDay.label}</p>
-              <p style={{ fontSize: 12, color: '#8A8A8A', margin: '0 0 12px' }}>{selectedDay.iso}</p>
-              <p style={{ fontSize: 14, color: '#111', margin: 0 }}>
+          <div
+            onClick={() => setSelectedDay(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 1000 }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'fixed',
+                left: Math.max(12, Math.min(window.innerWidth - 148, selectedDay.x - 68)),
+                top: Math.max(12, selectedDay.y - 74),
+                width: 136,
+                background: '#111',
+                color: '#fff',
+                borderRadius: 12,
+                padding: '10px 12px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+              }}
+            >
+              <p style={{ fontSize: 11, opacity: 0.8, margin: 0 }}>{selectedDay.label}</p>
+              <p style={{ fontSize: 14, fontWeight: 800, margin: '2px 0 0' }}>
                 {Math.min(selectedDay.count, selectedDay.goal)}/{selectedDay.goal} words
               </p>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 62,
+                  bottom: -6,
+                  width: 12,
+                  height: 12,
+                  background: '#111',
+                  transform: 'rotate(45deg)',
+                }}
+              />
             </div>
           </div>
         )}
