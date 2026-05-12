@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+/* eslint-disable react/prop-types */
+import { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { motion, useAnimation, useMotionValue, useTransform } from 'framer-motion';
 import { Upload, Search, Shuffle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
@@ -166,18 +167,19 @@ function UploadTab({ userId }) {
   const [totalCount, setTotalCount] = useState(0);
   const inputRef = useRef(null);
 
-  const refreshCount = async () => {
+  const refreshCount = useCallback(async () => {
     const { count } = await supabase
       .from('notebook_words')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId);
     setTotalCount(count || 0);
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
+    // refresh per signed-in user
     refreshCount();
-  }, [userId]);
+  }, [userId, refreshCount]);
 
   const parseFile = async (file) => {
     try {
