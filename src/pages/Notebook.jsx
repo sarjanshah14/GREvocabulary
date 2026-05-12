@@ -16,6 +16,48 @@ const TAB_BUTTON_STYLE = {
   cursor: 'pointer',
 };
 
+let swooshAudioContext = null;
+function playSwoosh(direction = 'right') {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!swooshAudioContext) swooshAudioContext = new Ctx();
+    const ctx = swooshAudioContext;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const now = ctx.currentTime;
+    const duration = 0.14;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const pan = ctx.createStereoPanner();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.exponentialRampToValueAtTime(260, now + duration);
+
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(500, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    pan.pan.setValueAtTime(direction === 'right' ? 0.45 : -0.45, now);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(pan);
+    pan.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration + 0.01);
+  } catch {
+    // audio is optional; fail silently
+  }
+}
+
 function fisherYatesShuffle(arr) {
   const out = [...arr];
   for (let i = out.length - 1; i > 0; i -= 1) {
@@ -68,6 +110,7 @@ const NotebookPracticeCard = forwardRef(function NotebookPracticeCard({ card, on
     triggerSwipe: async (dir) => {
       if (!card || isAnimating.current) return;
       isAnimating.current = true;
+      playSwoosh(dir);
       await controls.start({
         x: dir === 'right' ? 700 : -700,
         opacity: 0,
@@ -85,6 +128,7 @@ const NotebookPracticeCard = forwardRef(function NotebookPracticeCard({ card, on
     if (Math.abs(delta) > 80) {
       isAnimating.current = true;
       const dir = delta > 0 ? 'right' : 'left';
+      playSwoosh(dir);
       await controls.start({
         x: dir === 'right' ? 700 : -700,
         opacity: 0,
