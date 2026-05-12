@@ -26,24 +26,20 @@ function fisherYatesShuffle(arr) {
 }
 
 function normalizeNotebookJson(json) {
-  if (!json || typeof json !== 'object' || Array.isArray(json)) {
-    throw new Error('JSON must be an object like { "word": "meaning" }');
+  if (!Array.isArray(json)) {
+    throw new Error('JSON must be an array like [{ "word": "...", "meaning": "...", "sentence": "..." }]');
   }
 
-  return Object.entries(json)
-    .map(([rawWord, rawValue]) => {
-      const word = String(rawWord || '').trim();
+  return json
+    .map((row) => {
+      const word = String(row?.word || '').trim();
       if (!word) return null;
 
       let meaning = '';
-      if (typeof rawValue === 'string') {
-        meaning = rawValue.trim();
-      } else if (rawValue && typeof rawValue === 'object') {
-        if (typeof rawValue.meaning === 'string' && rawValue.meaning.trim()) {
-          meaning = rawValue.meaning.trim();
-        } else if (typeof rawValue.sentence === 'string' && rawValue.sentence.trim()) {
-          meaning = rawValue.sentence.trim();
-        }
+      if (typeof row?.meaning === 'string' && row.meaning.trim()) {
+        meaning = row.meaning.trim();
+      } else if (typeof row?.sentence === 'string' && row.sentence.trim()) {
+        meaning = row.sentence.trim();
       }
 
       if (!meaning) return null;
@@ -161,6 +157,7 @@ const NotebookPracticeCard = forwardRef(function NotebookPracticeCard({ card, on
 function UploadTab({ userId }) {
   const [parsedWords, setParsedWords] = useState([]);
   const [fileName, setFileName] = useState('');
+  const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [successText, setSuccessText] = useState('');
@@ -190,11 +187,35 @@ function UploadTab({ userId }) {
       const items = normalizeNotebookJson(json);
       if (!items.length) {
         setParsedWords([]);
-        setError('No valid words found. Expected format: { "word": "meaning" }.');
+        setError('No valid words found. Expected: [{ "word": "...", "meaning": "...", "sentence": "..." }].');
         return;
       }
       setParsedWords(items);
       setFileName(file.name);
+    } catch (e) {
+      setParsedWords([]);
+      setError(`Invalid JSON: ${e.message}`);
+    }
+  };
+
+  const parseFromTextInput = () => {
+    try {
+      setError('');
+      setSuccessText('');
+      const trimmed = jsonInput.trim();
+      if (!trimmed) {
+        setError('Paste JSON text first.');
+        return;
+      }
+      const json = JSON.parse(trimmed);
+      const items = normalizeNotebookJson(json);
+      if (!items.length) {
+        setParsedWords([]);
+        setError('No valid words found. Expected: [{ "word": "...", "meaning": "...", "sentence": "..." }].');
+        return;
+      }
+      setParsedWords(items);
+      setFileName('Pasted JSON');
     } catch (e) {
       setParsedWords([]);
       setError(`Invalid JSON: ${e.message}`);
@@ -221,6 +242,7 @@ function UploadTab({ userId }) {
   const clearAll = (keepSuccess = false) => {
     setParsedWords([]);
     setFileName('');
+    setJsonInput('');
     setError('');
     if (!keepSuccess) setSuccessText('');
     if (inputRef.current) inputRef.current.value = '';
@@ -281,35 +303,54 @@ function UploadTab({ userId }) {
           <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>Drop your JSON file here</p>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#ADADAD' }}>or tap to browse</p>
           {fileName && <p style={{ margin: '10px 0 0', fontSize: 12, color: '#7A7A7A' }}>{fileName}</p>}
-          {!fileName && (
-            <pre
-              style={{
-                margin: '14px auto 0',
-                padding: '8px 10px',
-                width: 'fit-content',
-                maxWidth: '100%',
-                borderRadius: 10,
-                background: 'rgba(188,108,75,0.06)',
-                color: 'rgba(124,124,124,0.72)',
-                fontSize: 10,
-                fontWeight: 600,
-                lineHeight: 1.45,
-                textAlign: 'left',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-{`{
-  "abate": "to reduce in intensity",
-  "laconic": "using very few words"
-}`}
-            </pre>
-          )}
         </div>
       </button>
 
       <p style={{ margin: '10px 4px 0', fontSize: 11, color: '#9A9A9A', lineHeight: 1.55 }}>
-        JSON format: {'{ "word": "meaning" }'} or {'{ "word": { "meaning": "...", "sentence": "..." } }'}.
+        JSON format: {'[{ "word": "...", "meaning": "...", "sentence": "..." }]'}.
       </p>
+
+      <div className="card" style={{ padding: 12, marginTop: 12 }}>
+        <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#8E8E8E' }}>
+          Or paste JSON text
+        </p>
+        <textarea
+          value={jsonInput}
+          onChange={(e) => setJsonInput(e.target.value)}
+          placeholder='[{"word":"abate","meaning":"to reduce in intensity","sentence":"The storm abated by noon."}]'
+          style={{
+            width: '100%',
+            minHeight: 104,
+            borderRadius: 12,
+            border: '1px solid #E1E1DE',
+            padding: 10,
+            fontSize: 12,
+            outline: 'none',
+            resize: 'vertical',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: '#333',
+            background: '#FCFCFB',
+          }}
+        />
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={parseFromTextInput}
+          style={{
+            marginTop: 10,
+            width: '100%',
+            border: 'none',
+            borderRadius: 12,
+            background: '#EAEAE8',
+            color: '#333',
+            height: 40,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
+          Add
+        </motion.button>
+      </div>
 
       {error && <p style={{ margin: '10px 4px 0', color: '#D64242', fontSize: 13, fontWeight: 600 }}>{error}</p>}
       {successText && (
