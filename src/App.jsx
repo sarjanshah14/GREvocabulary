@@ -10,6 +10,7 @@ import WordGroups from './pages/WordGroups';
 import WordGroupPractice from './pages/WordGroupPractice';
 import ConfusingWords from './pages/ConfusingWords';
 import Profile from './pages/Profile';
+import Notebook from './pages/Notebook';
 import Auth from './pages/Auth';
 import { supabase } from './utils/supabaseClient';
 import { fetchCloudData } from './utils/sync';
@@ -76,6 +77,7 @@ export default function App() {
               <Route path="/groups"         element={<WordGroups />} />
               <Route path="/groups/practice" element={<WordGroupPractice />} />
               <Route path="/confusing"      element={<ConfusingWords />} />
+              <Route path="/notebook"       element={<Notebook />} />
               <Route path="/profile"        element={<Profile session={session} />} />
             </Routes>
           )}

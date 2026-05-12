@@ -254,6 +254,10 @@ html.dark-mode #splash-screen {
   overflow-y: auto;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ─── Progress bar ───────────────────────── */
 .progress-track {
   width: 100%;

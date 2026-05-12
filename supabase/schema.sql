@@ -66,3 +66,27 @@ create policy "Users can view own daily words." on user_daily_words for select u
 create policy "Users can update own daily words." on user_daily_words for update using (auth.uid() = user_id);
 create policy "Users can insert own daily words." on user_daily_words for insert with check (auth.uid() = user_id);
 create policy "Users can delete own daily words." on user_daily_words for delete using (auth.uid() = user_id);
+
+-- 5. Notebook Words Table (Personal vocabulary notebook)
+create table if not exists public.notebook_words (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) not null,
+  word text not null,
+  meaning text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (user_id, word)
+);
+
+alter table public.notebook_words enable row level security;
+
+create policy "Users can view own notebook words." on notebook_words
+for select using (auth.uid() = user_id);
+
+create policy "Users can insert own notebook words." on notebook_words
+for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own notebook words." on notebook_words
+for update using (auth.uid() = user_id);
+
+create policy "Users can delete own notebook words." on notebook_words
+for delete using (auth.uid() = user_id);
