@@ -83,7 +83,8 @@ export function getWordState(word) {
   return progress[word] || defaultState(word);
 }
 
-export function updateWordState(word, correct) {
+export function updateWordState(word, correct, options = {}) {
+  const { trackDaily = true } = options;
   const progress = getAllProgress();
   const state = progress[word] || defaultState(word);
   const d = today();
@@ -112,7 +113,9 @@ export function updateWordState(word, correct) {
   ls_set(KEYS.PROGRESS, progress);
 
   // Side effects
-  incrementDaily(word);
+  if (trackDaily) {
+    incrementDaily(word);
+  }
 
   return state;
 }

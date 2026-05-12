@@ -149,6 +149,7 @@ export default function Flashcards() {
   const [searchParams] = useSearchParams();
   const urlMode = searchParams.get('mode');
   const historyDate = searchParams.get('historyDate');
+  const isReplaySession = Boolean(historyDate);
 
   // NEVER force-show mode sheet on load. Always start immediately.
   const [showSheet, setShowSheet] = useState(false);
@@ -169,7 +170,8 @@ export default function Flashcards() {
   const { current, index, total, swipe, resetIndex, isDone } = useSpacedRepetition(
     wordlists,
     mode,
-    historyPool.length > 0 ? historyPool : null
+    historyPool.length > 0 ? historyPool : null,
+    { trackDaily: !isReplaySession }
   );
 
   const handleSelect = (m) => { setMode(m); setShowSheet(false); };

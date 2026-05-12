@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { getSessionPool, filterWords, updateWordState, getDailyGoal } from '../utils/engine';
 
-export function useSpacedRepetition(allWords, mode = 'all', customWords = null) {
+export function useSpacedRepetition(allWords, mode = 'all', customWords = null, options = {}) {
+  const { trackDaily = true } = options;
   const filtered = customWords || filterWords(allWords, mode);
 
   const [pool] = useState(() => {
@@ -22,13 +23,13 @@ export function useSpacedRepetition(allWords, mode = 'all', customWords = null) 
     (dir) => {
       if (isAnimating || !current) return;
       setIsAnimating(true);
-      updateWordState(current.word, dir === 'right');
+      updateWordState(current.word, dir === 'right', { trackDaily });
       setTimeout(() => {
         setIndex((i) => i + 1);
         setIsAnimating(false);
       }, 350);
     },
-    [current, isAnimating]
+    [current, isAnimating, trackDaily]
   );
 
   return {

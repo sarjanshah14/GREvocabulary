@@ -281,6 +281,29 @@ function UploadTab({ userId }) {
           <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>Drop your JSON file here</p>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#ADADAD' }}>or tap to browse</p>
           {fileName && <p style={{ margin: '10px 0 0', fontSize: 12, color: '#7A7A7A' }}>{fileName}</p>}
+          {!fileName && (
+            <pre
+              style={{
+                margin: '14px auto 0',
+                padding: '8px 10px',
+                width: 'fit-content',
+                maxWidth: '100%',
+                borderRadius: 10,
+                background: 'rgba(188,108,75,0.06)',
+                color: 'rgba(124,124,124,0.72)',
+                fontSize: 10,
+                fontWeight: 600,
+                lineHeight: 1.45,
+                textAlign: 'left',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+{`{
+  "abate": "to reduce in intensity",
+  "laconic": "using very few words"
+}`}
+            </pre>
+          )}
         </div>
       </button>
 
