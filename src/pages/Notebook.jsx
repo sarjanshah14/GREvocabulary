@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { motion, useAnimation, useMotionValue, useTransform } from 'framer-motion';
-import { Upload, Search, Shuffle, CheckCircle2 } from 'lucide-react';
+import { Upload, Search, Shuffle, Check, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
 const TAB_BUTTON_STYLE = {
@@ -42,8 +42,12 @@ function normalizeNotebookJson(json) {
         meaning = row.sentence.trim();
       }
 
+      const sentence = typeof row?.sentence === 'string' && row.sentence.trim()
+        ? row.sentence.trim()
+        : null;
+
       if (!meaning) return null;
-      return { word, meaning };
+      return { word, meaning, sentence };
     })
     .filter(Boolean);
 }
@@ -147,6 +151,11 @@ const NotebookPracticeCard = forwardRef(function NotebookPracticeCard({ card, on
             <p className="font-semibold text-base leading-relaxed" style={{ color: '#111111' }}>
               {card.meaning}
             </p>
+            {card.sentence && (
+              <p className="text-sm italic leading-relaxed mt-3" style={{ color: '#7A7A7A' }}>
+                "{card.sentence}"
+              </p>
+            )}
           </div>
         </div>
       </motion.div>
@@ -259,6 +268,7 @@ function UploadTab({ userId }) {
       user_id: userId,
       word: item.word,
       meaning: item.meaning,
+      sentence: item.sentence,
     }));
 
     const { error: upsertError } = await supabase
@@ -504,9 +514,9 @@ function PracticeTab({ setActiveTab }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '24px 0 6px' }}>
         <motion.button
-          whileTap={{ scale: 0.88 }}
+          whileTap={{ scale: 0.88, rotate: -24 }}
           onClick={reshuffleNow}
           style={{
             width: 62,
@@ -523,6 +533,25 @@ function PracticeTab({ setActiveTab }) {
           aria-label="Reshuffle"
         >
           <Shuffle size={24} color="#777" />
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.88, x: 6 }}
+          onClick={() => cardRef.current?.triggerSwipe('right')}
+          style={{
+            width: 62,
+            height: 62,
+            borderRadius: 999,
+            border: 'none',
+            background: '#BC6C4B',
+            boxShadow: '0 8px 28px rgba(188,108,75,0.28), 0 2px 10px rgba(0,0,0,0.10)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          aria-label="Next card"
+        >
+          <Check size={24} color="#fff" />
         </motion.button>
       </div>
 
@@ -614,7 +643,7 @@ function DictionaryTab() {
       <div
         ref={listRef}
         onScroll={onScroll}
-        style={{ maxHeight: '62vh', overflowY: 'auto', paddingRight: 22, paddingBottom: 20 }}
+        style={{ maxHeight: '62vh', overflowY: 'auto', paddingRight: 14, paddingBottom: 20 }}
       >
         {!grouped.length ? (
           <div style={{ minHeight: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -640,13 +669,13 @@ function DictionaryTab() {
       <div
         style={{
           position: 'absolute',
-          right: -4,
+          right: 0,
           top: 96,
-          width: 20,
+          width: 14,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 2,
+          gap: 1,
         }}
       >
         {letters.map((letter) => (
@@ -657,7 +686,7 @@ function DictionaryTab() {
               border: 'none',
               background: 'none',
               padding: 0,
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: activeLetter === letter ? 800 : 600,
               color: activeLetter === letter ? '#BC6C4B' : '#ADADAD',
               cursor: 'pointer',
@@ -673,7 +702,7 @@ function DictionaryTab() {
 }
 
 export default function Notebook() {
-  const [activeTab, setActiveTab] = useState('upload');
+  const [activeTab, setActiveTab] = useState('practice');
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {

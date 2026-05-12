@@ -73,9 +73,12 @@ create table if not exists public.notebook_words (
   user_id uuid references public.profiles(id) not null,
   word text not null,
   meaning text not null,
+  sentence text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique (user_id, word)
 );
+
+alter table public.notebook_words add column if not exists sentence text;
 
 alter table public.notebook_words enable row level security;
 
