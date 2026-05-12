@@ -72,24 +72,29 @@ function normalizeNotebookJson(json) {
     throw new Error('JSON must be an array like [{ "word": "...", "meaning": "...", "sentence": "..." }]');
   }
 
+  const pickText = (row, keys) => {
+    if (!row || typeof row !== 'object') return '';
+    const lowerMap = Object.keys(row).reduce((acc, k) => {
+      acc[k.toLowerCase()] = row[k];
+      return acc;
+    }, {});
+    for (const key of keys) {
+      const val = lowerMap[key.toLowerCase()];
+      if (typeof val === 'string' && val.trim()) return val.trim();
+    }
+    return '';
+  };
+
   return json
     .map((row) => {
-      const word = String(row?.word || '').trim();
+      const word = pickText(row, ['word', 'term', 'vocab']);
       if (!word) return null;
 
-      let meaning = '';
-      if (typeof row?.meaning === 'string' && row.meaning.trim()) {
-        meaning = row.meaning.trim();
-      } else if (typeof row?.sentence === 'string' && row.sentence.trim()) {
-        meaning = row.sentence.trim();
-      }
-
-      const sentence = typeof row?.sentence === 'string' && row.sentence.trim()
-        ? row.sentence.trim()
-        : null;
+      const sentence = pickText(row, ['sentence', 'example', 'usage']);
+      const meaning = pickText(row, ['meaning', 'definition']) || sentence;
 
       if (!meaning) return null;
-      return { word, meaning, sentence };
+      return { word, meaning, sentence: sentence || null };
     })
     .filter(Boolean);
 }
