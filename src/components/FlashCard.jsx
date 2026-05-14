@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, forwardRef, useImperativeHandle, useEffe
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
 const SWIPE_THRESHOLD = 80;  // px to trigger a swipe
-const SWOOSH_SRC = '/universfield-swoosh-06-351021.mp3';
 
 const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
   const [flipped, setFlipped] = useState(false);
@@ -14,27 +13,12 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
 
   const isAnimating = useRef(false);
   const cardRef = useRef(null);
-  const swooshRef = useRef(null);
-
-  const playSwoosh = useCallback(() => {
-    try {
-      if (!swooshRef.current) {
-        swooshRef.current = new Audio(SWOOSH_SRC);
-        swooshRef.current.preload = 'auto';
-      }
-      swooshRef.current.currentTime = 0;
-      swooshRef.current.play().catch(() => {});
-    } catch {
-      // audio is optional
-    }
-  }, []);
 
   // Expose imperative triggerSwipe for external buttons
   useImperativeHandle(ref, () => ({
     triggerSwipe: async (dir) => {
       if (isAnimating.current) return;
       isAnimating.current = true;
-      playSwoosh();
       await controls.start({
         x: dir === 'right' ? 700 : -700,
         opacity: 0,
@@ -59,7 +43,6 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
     if (Math.abs(delta) > SWIPE_THRESHOLD) {
       isAnimating.current = true;
       const dir = delta > 0 ? 'right' : 'left';
-      playSwoosh();
       await controls.start({
         x: dir === 'right' ? 700 : -700,
         opacity: 0,
@@ -76,7 +59,7 @@ const FlashCard = forwardRef(({ word, onSwipe }, ref) => {
         transition: { type: 'spring', stiffness: 500, damping: 38 },
       });
     }
-  }, [controls, onSwipe, playSwoosh]);
+  }, [controls, onSwipe]);
 
   // Strict touch lock for mobile safari/chrome
   useEffect(() => {
